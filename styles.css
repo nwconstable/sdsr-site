@@ -5,19 +5,58 @@
     box-sizing: border-box;
 }
 
+:root {
+    /* Light mode colors */
+    --bg-color: #f5f5f5;
+    --text-color: #333;
+    --text-secondary: #555;
+    --text-tertiary: #666;
+    --card-bg: #ffffff;
+    --card-secondary-bg: #f9f9f9;
+    --header-gradient-start: #667eea;
+    --header-gradient-end: #764ba2;
+    --accent-color: #667eea;
+    --border-color: #667eea;
+    --shadow-color: rgba(0,0,0,0.1);
+    --shadow-hover: rgba(0,0,0,0.15);
+    --footer-bg: #333;
+    --footer-text: #ffffff;
+    --code-bg: #f4f4f4;
+}
+
+body.dark-mode {
+    /* Dark mode colors */
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-tertiary: #999999;
+    --card-bg: #2a2a2a;
+    --card-secondary-bg: #333333;
+    --header-gradient-start: #4a5fd9;
+    --header-gradient-end: #5d3a8a;
+    --accent-color: #7b8df0;
+    --border-color: #7b8df0;
+    --shadow-color: rgba(0,0,0,0.3);
+    --shadow-hover: rgba(0,0,0,0.5);
+    --footer-bg: #0d0d0d;
+    --footer-text: #e0e0e0;
+    --code-bg: #1e1e1e;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f5f5f5;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Header and Navigation */
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
     color: white;
     padding: 1rem 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px var(--shadow-color);
 }
 
 .nav-container {
@@ -28,6 +67,12 @@ header {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 header h1 {
@@ -55,6 +100,33 @@ header h1 {
     background-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Theme Toggle Button */
+.theme-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 0.8rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    width: 45px;
+    height: 45px;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.theme-icon {
+    display: block;
+    line-height: 1;
+}
+
 /* Main Content */
 main {
     max-width: 1200px;
@@ -63,18 +135,19 @@ main {
 }
 
 section {
-    background: white;
+    background: var(--card-bg);
     margin-bottom: 2rem;
     padding: 2rem;
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px var(--shadow-color);
+    transition: background-color 0.3s ease;
 }
 
 section h2 {
-    color: #667eea;
+    color: var(--accent-color);
     margin-bottom: 1.5rem;
     font-size: 2rem;
-    border-bottom: 3px solid #667eea;
+    border-bottom: 3px solid var(--border-color);
     padding-bottom: 0.5rem;
 }
 
@@ -86,7 +159,7 @@ section h2 {
 
 .welcome p {
     font-size: 1.2rem;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 /* Team Section */
@@ -98,16 +171,16 @@ section h2 {
 }
 
 .member-card {
-    background: #f9f9f9;
+    background: var(--card-secondary-bg);
     border-radius: 10px;
     padding: 2rem;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
 }
 
 .member-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 5px 20px var(--shadow-hover);
 }
 
 .member-image {
@@ -116,7 +189,7 @@ section h2 {
     margin: 0 auto 1.5rem;
     border-radius: 50%;
     overflow: hidden;
-    border: 4px solid #667eea;
+    border: 4px solid var(--border-color);
 }
 
 .member-image img {
@@ -126,25 +199,25 @@ section h2 {
 }
 
 .member-info h3 {
-    color: #333;
+    color: var(--text-color);
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 }
 
 .member-info .role {
-    color: #667eea;
+    color: var(--accent-color);
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .member-info .email {
-    color: #555;
+    color: var(--text-secondary);
     font-size: 0.95rem;
     margin-bottom: 1rem;
 }
 
 .member-info .bio {
-    color: #666;
+    color: var(--text-tertiary);
     font-size: 0.95rem;
     line-height: 1.5;
     text-align: left;
@@ -159,32 +232,32 @@ section h2 {
 }
 
 .assignment-item {
-    background: #f9f9f9;
+    background: var(--card-secondary-bg);
     padding: 1.5rem;
     border-radius: 8px;
-    border-left: 4px solid #667eea;
-    transition: transform 0.3s ease;
+    border-left: 4px solid var(--border-color);
+    transition: transform 0.3s ease, background-color 0.3s ease;
 }
 
 .assignment-item:hover {
     transform: translateX(5px);
-    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 3px 15px var(--shadow-color);
 }
 
 .assignment-item h3 {
-    color: #333;
+    color: var(--text-color);
     margin-bottom: 0.5rem;
 }
 
 .assignment-item p {
-    color: #666;
+    color: var(--text-tertiary);
     margin-bottom: 1rem;
 }
 
 .btn {
     display: inline-block;
     padding: 0.7rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
     color: white;
     text-decoration: none;
     border-radius: 5px;
@@ -210,7 +283,7 @@ section h2 {
 }
 
 .assignment-meta {
-    color: #666;
+    color: var(--text-tertiary);
     font-size: 0.95rem;
 }
 
@@ -219,14 +292,14 @@ section h2 {
 }
 
 .assignment-content h3 {
-    color: #667eea;
+    color: var(--accent-color);
     margin-top: 2rem;
     margin-bottom: 1rem;
 }
 
 .assignment-content p {
     margin-bottom: 1rem;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 .assignment-content ul,
@@ -237,18 +310,18 @@ section h2 {
 
 .assignment-content li {
     margin-bottom: 0.5rem;
-    color: #555;
+    color: var(--text-secondary);
 }
 
 .assignment-content code {
-    background: #f4f4f4;
+    background: var(--code-bg);
     padding: 0.2rem 0.5rem;
     border-radius: 3px;
     font-family: 'Courier New', monospace;
 }
 
 .assignment-content pre {
-    background: #f4f4f4;
+    background: var(--code-bg);
     padding: 1rem;
     border-radius: 5px;
     overflow-x: auto;
@@ -257,11 +330,12 @@ section h2 {
 
 /* Footer */
 footer {
-    background: #333;
-    color: white;
+    background: var(--footer-bg);
+    color: var(--footer-text);
     text-align: center;
     padding: 1.5rem;
     margin-top: 3rem;
+    transition: background-color 0.3s ease;
 }
 
 /* Responsive Design */
@@ -271,6 +345,11 @@ footer {
         text-align: center;
     }
 
+    .nav-right {
+        flex-direction: column;
+        width: 100%;
+    }
+
     header h1 {
         margin-bottom: 1rem;
     }
@@ -278,6 +357,10 @@ footer {
     .nav-links {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    .theme-toggle {
+        margin-top: 1rem;
     }
 
     .team-members {
