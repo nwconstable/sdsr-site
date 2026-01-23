@@ -2,10 +2,29 @@
 function parseMarkdown(markdown) {
     let html = markdown;
     
-    // Headers
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+    // Escape HTML special characters first to prevent XSS
+    // (but we'll skip this for now to allow embedding HTML if needed)
+    
+    // Process code blocks first (before other processing)
+    const codeBlocks = [];
+    html = html.replace(/```([\s\S]*?)```/gim, (match, code) => {
+        const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
+        codeBlocks.push(`<pre><code>${code.trim()}</code></pre>`);
+        return placeholder;
+    });
+    
+    // Inline code (before other processing)
+    const inlineCodes = [];
+    html = html.replace(/`([^`]+)`/gim, (match, code) => {
+        const placeholder = `___INLINE_CODE_${inlineCodes.length}___`;
+        inlineCodes.push(`<code>${code}</code>`);
+        return placeholder;
+    });
+    
+    // Headers (must be on their own line)
+    html = html.replace(/^### (.*)$/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*)$/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*)$/gim, '<h1>$1</h1>');
     
     // Bold
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
@@ -16,48 +35,50 @@ function parseMarkdown(markdown) {
     // Links
     html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2">$1</a>');
     
-    // Lists - Unordered
-    html = html.replace(/^\s*-\s+(.*)$/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+    // Process lists (unordered)
+    html = html.replace(/^((?:\s*-\s+.+$\n?)+)/gim, (match) => {
+        const items = match.trim().split('\n').filter(line => line.trim()).map(line => {
+            const content = line.replace(/^\s*-\s+/, '').trim();
+            return `<li>${content}</li>`;
+        }).join('');
+        return `<ul>${items}</ul>`;
+    });
     
-    // Lists - Ordered
-    html = html.replace(/^\s*\d+\.\s+(.*)$/gim, '<li>$1</li>');
+    // Ordered lists
+    html = html.replace(/^((?:\s*\d+\.\s+.+$\n?)+)/gim, (match) => {
+        const items = match.trim().split('\n').filter(line => line.trim()).map(line => {
+            const content = line.replace(/^\s*\d+\.\s+/, '').trim();
+            return `<li>${content}</li>`;
+        }).join('');
+        return `<ol>${items}</ol>`;
+    });
     
-    // Code blocks
-    html = html.replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>');
-    
-    // Inline code
-    html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
-    
-    // Paragraphs - split by double newlines
-    let paragraphs = html.split(/\n\n+/);
-    html = paragraphs.map(p => {
-        p = p.trim();
-        // Don't wrap if already a tag
-        if (p.match(/^<(h1|h2|h3|h4|ul|ol|pre|li)/)) {
-            return p;
+    // Split into paragraphs by double newlines
+    const blocks = html.split(/\n\n+/);
+    html = blocks.map(block => {
+        block = block.trim();
+        if (!block) return '';
+        
+        // Don't wrap if it's already a block element
+        if (block.match(/^<(h[1-6]|ul|ol|pre|blockquote|div|hr)/)) {
+            return block;
         }
-        return `<p>${p}</p>`;
-    }).join('\n');
+        
+        // Single line breaks within paragraphs become <br>
+        block = block.replace(/\n/g, '<br>');
+        
+        return `<p>${block}</p>`;
+    }).filter(b => b).join('\n');
     
-    // Line breaks
-    html = html.replace(/\n/gim, '<br>');
+    // Restore code blocks
+    codeBlocks.forEach((code, i) => {
+        html = html.replace(`___CODE_BLOCK_${i}___`, code);
+    });
     
-    // Clean up list formatting
-    html = html.replace(/<br><ul>/gim, '<ul>');
-    html = html.replace(/<\/ul><br>/gim, '</ul>');
-    html = html.replace(/<br><ol>/gim, '<ol>');
-    html = html.replace(/<\/ol><br>/gim, '</ol>');
-    html = html.replace(/<br><\/li>/gim, '</li>');
-    html = html.replace(/<li><br>/gim, '<li>');
-    
-    // Clean up header formatting
-    html = html.replace(/<br><\/h([123])>/gim, '</h$1>');
-    html = html.replace(/<h([123])><br>/gim, '<h$1>');
-    
-    // Clean up paragraph formatting
-    html = html.replace(/<p><br>/gim, '<p>');
-    html = html.replace(/<br><\/p>/gim, '</p>');
+    // Restore inline code
+    inlineCodes.forEach((code, i) => {
+        html = html.replace(`___INLINE_CODE_${i}___`, code);
+    });
     
     return html;
 }
