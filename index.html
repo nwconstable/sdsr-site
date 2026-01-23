@@ -14,7 +14,14 @@
                 <div class="nav-right">
                     <ul class="nav-links">
                         <li><a href="index.html" class="active">Home</a></li>
-                        <li><a href="assignment1.html">Assignment 1</a></li>
+                        <li class="dropdown">
+                            <button class="dropdown-toggle" id="assignments-dropdown">
+                                Assignments ▼
+                            </button>
+                            <ul class="dropdown-menu" id="assignments-menu">
+                                <li class="dropdown-loading">Loading assignments...</li>
+                            </ul>
+                        </li>
                     </ul>
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                         <span class="theme-icon"></span>
@@ -58,17 +65,6 @@
                 </div>
             </div>
         </section>
-
-        <section class="assignments">
-            <h2>Course Assignments</h2>
-            <div class="assignment-list">
-                <div class="assignment-item">
-                    <h3>Assignment 1</h3>
-                    <p>Click to view our first assignment submission</p>
-                    <a href="assignment1.html" class="btn">View Assignment</a>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer>
@@ -76,5 +72,6 @@
     </footer>
 
     <script src="theme-toggle.js"></script>
+    <script src="assignment-loader.js"></script>
 </body>
 </html>

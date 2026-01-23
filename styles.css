@@ -100,6 +100,75 @@ header h1 {
     background-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Dropdown Menu */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--card-bg);
+    border-radius: 5px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    list-style: none;
+    min-width: 250px;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0;
+    display: none;
+    z-index: 1000;
+}
+
+.dropdown.active .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu li {
+    padding: 0;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: var(--card-secondary-bg);
+}
+
+.dropdown-loading,
+.dropdown-error {
+    padding: 0.75rem 1.5rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.dropdown-error {
+    color: #e74c3c;
+}
+
+
 /* Theme Toggle Button */
 .theme-toggle {
     background: rgba(255, 255, 255, 0.2);
@@ -340,6 +409,61 @@ footer {
     transition: background-color 0.3s ease;
 }
 
+/* Assignment Viewer */
+.assignment-viewer {
+    min-height: 400px;
+}
+
+.assignment-viewer .assignment-content h1 {
+    color: var(--accent-color);
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+    border-bottom: 3px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.assignment-viewer .assignment-content h2 {
+    color: var(--accent-color);
+    font-size: 1.8rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.assignment-viewer .assignment-content h3 {
+    color: var(--accent-color);
+    font-size: 1.4rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.8rem;
+}
+
+.assignment-viewer .assignment-content strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.error-message {
+    text-align: center;
+    padding: 3rem;
+}
+
+.error-message h2 {
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+}
+
+.error-message p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .nav-container {
@@ -359,6 +483,11 @@ footer {
     .nav-links {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    .dropdown-menu {
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     .theme-toggle {
