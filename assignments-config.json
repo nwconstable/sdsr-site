@@ -1,0 +1,14 @@
+{
+  "assignments": [
+    {
+      "id": "assignment1",
+      "title": "Assignment 1: Introduction to Course Topics",
+      "file": "assignments/assignment1.md"
+    },
+    {
+      "id": "assignment2",
+      "title": "Assignment 2: Advanced Topics",
+      "file": "assignments/assignment2.md"
+    }
+  ]
+}

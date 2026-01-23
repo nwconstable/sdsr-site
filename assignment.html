@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment - SDSR Course</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-mode">
+    <header>
+        <nav>
+            <div class="nav-container">
+                <h1>SDSR Course Assignments</h1>
+                <div class="nav-right">
+                    <ul class="nav-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li class="dropdown">
+                            <button class="dropdown-toggle" id="assignments-dropdown">
+                                Assignments ▼
+                            </button>
+                            <ul class="dropdown-menu" id="assignments-menu">
+                                <li class="dropdown-loading">Loading assignments...</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                        <span class="theme-icon"></span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="assignment-content" class="assignment-viewer">
+            <div class="loading">Loading assignment...</div>
+        </section>
+
+        <section>
+            <a href="index.html" class="btn">← Back to Home</a>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 SDSR Course. All rights reserved.</p>
+    </footer>
+
+    <script src="markdown-parser.js"></script>
+    <script src="theme-toggle.js"></script>
+    <script src="assignment-loader.js"></script>
+</body>
+</html>

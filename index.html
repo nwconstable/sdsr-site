@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDSR Course - Home</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-mode">
+    <header>
+        <nav>
+            <div class="nav-container">
+                <h1>SDSR Course Assignments</h1>
+                <div class="nav-right">
+                    <ul class="nav-links">
+                        <li><a href="index.html" class="active">Home</a></li>
+                        <li class="dropdown">
+                            <button class="dropdown-toggle" id="assignments-dropdown">
+                                Assignments ▼
+                            </button>
+                            <ul class="dropdown-menu" id="assignments-menu">
+                                <li class="dropdown-loading">Loading assignments...</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                        <span class="theme-icon"></span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="welcome">
+            <h2>Welcome to Our Course Website</h2>
+            <p>This website showcases our graduate course assignments and projects.</p>
+        </section>
+
+        <section class="team">
+            <h2>Our Team</h2>
+            <div class="team-members">
+                <div class="member-card">
+                    <div class="member-image">
+                        <img src="images/member1.jpg" alt="Team Member 1" onerror="this.src='images/placeholder.svg'">
+                    </div>
+                    <div class="member-info">
+                        <h3>Student Name 1</h3>
+                        <p class="role">Graduate Student</p>
+                        <p class="email">📧 student1@university.edu</p>
+                        <p class="bio">Brief bio about the student's background, interests, and academic focus.</p>
+                    </div>
+                </div>
+
+                <div class="member-card">
+                    <div class="member-image">
+                        <img src="images/member2.jpg" alt="Team Member 2" onerror="this.src='images/placeholder.svg'">
+                    </div>
+                    <div class="member-info">
+                        <h3>Student Name 2</h3>
+                        <p class="role">Graduate Student</p>
+                        <p class="email">📧 student2@university.edu</p>
+                        <p class="bio">Brief bio about the student's background, interests, and academic focus.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 SDSR Course. All rights reserved.</p>
+    </footer>
+
+    <script src="theme-toggle.js"></script>
+    <script src="assignment-loader.js"></script>
+</body>
+</html>
