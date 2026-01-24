@@ -9,12 +9,13 @@
 - Noah Constable
 - const112@umn.edu
 - 5541976
-- [ ] Survey Completed
 
 - Joe Conroy
 - conro083@umn.edu
 - 
-- [ ] Survey Completed
+
+### Survey
+- [x] Survey Completed
 
 ---
 
