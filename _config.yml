@@ -1,5 +1,3 @@
 theme: jekyll-theme-minimal
 title: SDSR Home Page
 description: Home page for the SDSR project
-plugins:
-  - jekyll-target-blank
