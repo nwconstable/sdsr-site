@@ -5,16 +5,15 @@
 ## O1
 > Identify the members in your team. Provide names, student ids, email addresses for each team member, and a group web url to turn in homework. Kindly fill out a [background survey](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/index.php?page=./survey) and turn it in.
 
-#### Group:
-- Noah Constable
-- const112@umn.edu
-- 5541976
-- [ ] Survey Completed
-
-- Joe Conroy
-- conro083@umn.edu
-- 
-- [ ] Survey Completed
+#### Group Members:
+- **Noah Constable**
+  - const112@umn.edu
+  - 5541976
+  - [ ] Survey Completed
+- **Joe Conroy**
+  - conro083@umn.edu
+  - 4218576
+  - [x] Survey Completed
 
 ---
 
