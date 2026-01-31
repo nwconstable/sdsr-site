@@ -5,9 +5,9 @@
 ## CA2
 > Identify two other papers (say Q and R) chosen for class presentation by other groups. You team will peer-review presentations prepared by other teams on Q and R.
 
-### Paper Q:  TBD
+### Paper Q:  [Foundation Models for Scientific Discovery and Innovation](https://www.nationalacademies.org/read/29212/chapter/1)
 
-### Paper R:  TBD
+### Paper R:  [A Survey on Uncertainty Quantiifcation Methods for Deep Learning](https://dl.acm.org/doi/10.1145/3786319)
 
 ## CA3
 > Submit an electronic copy (plain text or other standard format files) of the narrative and slides. Use file formats (e.g. powerpoint, pdf), which are supported widely by browsers. Electronic copy will be linked to the web-page for the course to make those available to the audience. The written critique should be about 1500 ~ 2000 words long and the oral presentation should consist of about 10 slides addressing the following questions:
@@ -22,6 +22,9 @@
 ## CP1
 > Define possible questions, i.e. preliminary proposal outlining areas of interest based on the examination of course material. The question should be related to a topic covered in the course but not completely addressed by the papers in the reading list.
 
+- What is the primary purpose for introducing PyG 2.0 over PyG (Pytorch Geometric)?
+- List the underlying mathematics used for PyG 2.0's architecture.  How do they contribute to PyG 2.0's construct?  How is their use different from the initial PyG architecture?
+- What applications can PyG 2.0 be used for?  Are the applications theoretical or practical?  Were any demonstrated in the paper?
 
 
 ---
