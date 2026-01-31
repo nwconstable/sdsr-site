@@ -11,11 +11,11 @@
 
 ## CA3
 > Submit an electronic copy (plain text or other standard format files) of the narrative and slides. Use file formats (e.g. powerpoint, pdf), which are supported widely by browsers. Electronic copy will be linked to the web-page for the course to make those available to the audience. The written critique should be about 1500 ~ 2000 words long and the oral presentation should consist of about 10 slides addressing the following questions:
-- Problem statement: Formally define the problem addressed in the paper. Briefly explain the significance of the problem in context of our course.
-- List the major contributions of the paper. Which do you think is most significant and why?
-- What are the key concepts behind the approach in this paper. Provide simple explanations of those. Also provide a couple of simple exercises for the audience to check their undersanding of the key concepts.
-- What is the validation methodology (e.g. case studies, statistical hypothesis testing, proofs, simulation) used in this paper? Describe the strengths and weaknesses of the methodology. Why did authors choose this methodology?
-- List the assumptions made by the authors. Critique an assumption that you believe is unreasonable. What is the impact of removing this unreasonable assumption on the solution proposed by the authors?
+>- Problem statement: Formally define the problem addressed in the paper. Briefly explain the significance of the problem in context of our course.
+>- List the major contributions of the paper. Which do you think is most significant and why?
+>- What are the key concepts behind the approach in this paper. Provide simple explanations of those. Also provide a couple of simple exercises for the audience to check their undersanding of the key concepts.
+>- What is the validation methodology (e.g. case studies, statistical hypothesis testing, proofs, simulation) used in this paper? Describe the strengths and weaknesses of the methodology. Why did authors choose this methodology?
+>- List the assumptions made by the authors. Critique an assumption that you believe is unreasonable. What is the impact of removing this unreasonable assumption on the solution proposed by the authors?
 
 ---
 
