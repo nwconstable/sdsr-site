@@ -17,6 +17,8 @@
 >- What is the validation methodology (e.g. case studies, statistical hypothesis testing, proofs, simulation) used in this paper? Describe the strengths and weaknesses of the methodology. Why did authors choose this methodology?
 >- List the assumptions made by the authors. Critique an assumption that you believe is unreasonable. What is the impact of removing this unreasonable assumption on the solution proposed by the authors?
 
+[Slides](https://docs.google.com/presentation/d/1DAE8NNESpjMoZwmZCqmXO15e6KbJgHmqGu0Wok-7FZ0/edit?usp=sharing)
+
 ---
 
 ## CP1
