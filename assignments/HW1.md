@@ -37,7 +37,7 @@
 
  Images and their corresponding Alt Text *Image Breakdown* Outputs:
 
-![First Image](image1.png)
+![First Image](..\images\HW1\image1.png)
 *Long Description:*
 
 *The image illustrates a binary search tree diagram. At the top level, the word "Search tree" is displayed. Below it, there are two legends: a filled circle indicating a "Tree node pointer" and an empty circle indicating a "Null tree pointer." The tree structure begins with the root node labeled "5," connected by arrows pointing to its left and right child nodes. The left child node, labeled "3," further points to its own left child, labeled "1." On the right side of the root, the node "6" points to its right child, labeled "9." The node "9" has two children: "7" on the left and "8" on the right. The node "9" also points to the value "12" on the far right. Each node is represented by a small rectangle with two or three compartments, indicating the tree pointer structure.*
@@ -50,7 +50,7 @@
 
 *Search tree Tree node pointer Null tree pointer*
 
-![Second Image](image2.png)
+![Second Image](..\images\HW1\image2.png)
 
 *"Long Description:*
 
@@ -64,7 +64,7 @@
 
 *(a) Tree pointer; X ≤ K1; Ki−1 < X ≤ Ki; Kq−1 < X (b) Data pointer; Pointer to next leaf node in tree*
 
-![Third Image](image3.png)
+![Third Image](..\images\HW1\image3.png)
 
 *Long Description:*
 
@@ -81,7 +81,7 @@
 *X-axis: 0(000), 1(001), 2(010), 3(011), 4(100), 5(101), 6(110), 7(111)*
 *Y-axis: 0(000), 1(001), 2(010), 3(011), 4(100), 5(101), 6(110), 7(111)*
 
-![Fourth Image](image4.png)
+![Fourth Image](..\images\HW1\image4.png)
 
 *Long Description:*
 
@@ -95,7 +95,7 @@
 
 *R-tree a b c d e f g x y 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16*
 
-![Fifth Image](image5.png)
+![Fifth Image](..\images\HW1\image5.png)
 
 *Long Description:*
 
