@@ -35,7 +35,9 @@
 ## DA1
 > Each group will be assigned a week of class notes to work on. Generate alternative text for the first 5 images in the slide deck. To do this, download the slide deck from the "Slides" column of the Notes table for the assigned week. To generate alternative text for an image in the slide deck, simply download the image and upload it to the Image Accessibility Generator. To insert an alternative text, right click an image in the slide and select "Edit Alt Text ..." in the drop down menu in Microsoft Powerpoint.
 
- Images and their corresponding Alt Text *Image Breakdown* Outputs:
+The annotated slides can be found [here](https://docs.google.com/presentation/d/1_zE7dc3uwn3rmbFfGIhyXYWSVycqhegS/edit?usp=sharing&ouid=106141610227540702844&rtpof=true&sd=true). The images with the generated alt text can be found below.
+ 
+Images and their corresponding Alt Text *Image Breakdown* Outputs:
 
 ![First Image](..\images\HW1\image1.png)
 *Long Description:*
