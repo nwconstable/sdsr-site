@@ -1,0 +1,2 @@
+## CP6
+> Submit a review of the project proposal and presentations. Each team should submit approx. 500 words review using the following [form](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/CSCI-8715_Project_presentation_review.docx). 

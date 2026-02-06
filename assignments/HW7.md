@@ -1,0 +1,9 @@
+## CP8
+> You are already assigned two class projects to review (in teams web page). Review the assigned course projects. You may use the following review form: [Form](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/CSCI-8715_Final_Review.docx). You are expected to submit 500 word comment to authors including a list of 3 to 4 specific suggestions for improvements. For the peer review, BOTH members on a team should provide input to both of the other papers critiques. Do not split the work of reviewing as it reduces feedback to the authors. 
+
+## CP9
+> Oral presentation in the class using 10 to 15 slides.
+> - Each project presentation should be limited to 25 minutes to allow completion of 3 presentations in a 75 minute meeting. Limit each presentation to less than 12 slides since an average presenter takes about 2 minutes to explain a typical slide (this is a suggestion). Know which slide you should be on at the end of 20 minutes and 22 minutes to ensure proper pace. A partner within each group should watch time and let the speaker know when 5 minutes are left or 2 minutes are left.
+> - Presentations on survey papers should include motivation, major problems in the area, key results, open problems, and key sources. Focus on major problems and key results. Use summary figures (e.g. classification diagram for all approached to recovery in the Computing Survey paper in our readings) or tables to highlight key messages.
+> - Presentations on projects should follow the format of paper analysis. Candidate sections include motivation, problem definition, key issues and alternative ways of resolving those, related work and their limitations, your approach, validation, conclusions (key contributions), and future work (assumptions and potential extensions).
+> - Reviwers may use the following form to review the final class presentations and the final project reports.
