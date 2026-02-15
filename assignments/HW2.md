@@ -3,9 +3,11 @@
 
 *Q: [Foundation Models for Scientific Discovery and Innovation](https://www.nationalacademies.org/read/29212/chapter/1):*
 
-The paper's expected presentation date is 
+Group three's presentation on this paper is expected to be on February 24th, 2026.
 
 *R: [A Survey on Uncertainty Quantiifcation Methods for Deep Learning](https://dl.acm.org/doi/10.1145/3786319)*
+
+This survey's anticipated presentation date is March 5th, 2026, by Group 6.
 
 ## CP2
 > Identify key sources, types of evidence. Include a list of sources. The potential source for the paper is a recent conference proceedings or a journal in the data science area. Students should visit library, web (e.g. Google Scholar, DBLP, ACM DL, IEEE DL for papers and amazon.com for book) and fellow students specializing in the data science research area, to check the availability of the sources before listing them. Provide summary of search results from DBLP and amazon.com to illustrate the effort. 
@@ -43,7 +45,9 @@ Google Scholar search "communication protocols graph theory":
 [10] "[*A new graph theory based routing protocol for wireless sensor networks*](https://www.academia.edu/download/38126526/1211jgraph02.pdf) - published 2011
 
 
-From these searches I concluded I had enough from the papers themselves and the citations to go off of. [2] especially provides good 'key concept' sections, references PyG 2.0, and Graph Neural Networks/Edge Graph Intelligence. From the background I've developed in this course, this felt like the 'winner' in terms of a good spot to search for specific problems.
+From these searches I concluded I had enough from the papers themselves and the citations to go off of. *Edge Graph Intelligence: Reciprocally Empowering Edge Networks With Graph Intelligence* [2] especially provides good 'key concept' sections, references PyG 2.0, and Graph Neural Networks/Edge Graph Intelligence. From the background I've developed in this course, this felt like the 'winner' in terms of a good spot to search for specific problems.
+
+Joe:  Following up from Noah's found sources, I discovered several papers that covered topics where GNN bottlenecks existed and required 
 
 ## CP3
 > Summary of key readings. This summary is more than a list of summaries for individual research papers using the hints in the section on analyzing a research paper. A possible approach is to find a common abstract problems adressed by all the paper and develop a simple classification system to compare the solutions proposed in individual papers. Look at the "literature survey" sections of the papers in the reading list (particularly the thsoe from ACM Computing Surveys) for examples. Provide the summary of key readings in three formats: 
@@ -83,7 +87,7 @@ The problem we're choosing to look at specifically is Edge Graph Intelligence co
 
 ### 2. Decision Table
 
-| System Need                             | Communication Style                         | Provides                                          | Missing for EGI + Agentic GNN                                                        |
+| System Purpose                             | Communication Style                         | Primary Benefit                                          | Missing for EGI + Agentic GNN                                                        |
 | --------------------------------------- | ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Internet reliability                    | Packet transport                            | Delivery guarantees                               | No intelligence                                                                      |
 | IoT systems                             | Lightweight messaging                       | Efficient data transfer                           | No learning                                                                          |
@@ -92,6 +96,9 @@ The problem we're choosing to look at specifically is Edge Graph Intelligence co
 | Agentic Graph Wireless Intelligence | Needed: Agent-aware graph communication | Autonomous distributed intelligence over wireless | No existing protocol supports learning + graph + autonomy + wireless constraints |
 
 ### 3. Decision Tree
+
+![alt text](../images/HW2/CP3.3_Image.jpg)
+
 ```
 Start: Need machines to communicate?
 ├── Simple point-to-point data transfer sufficient?
