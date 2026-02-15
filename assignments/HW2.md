@@ -32,6 +32,15 @@ Google Scholar Search "spatio temporal data, edge computing, drone":
 
 [7] "[*AerialDB: A federated peer-to-peer spatio-temporal edge datastore for drone fleets*](https://arxiv.org/pdf/2508.07124)" - published 2025
 
+Google Scholar search "graph intelligence communication":
+
+[8] "[*Agentic Graph Neural Networks for Wireless Communications and Networkings Towards Edge General Intelligence: A Survey*](https://ieeexplore.ieee.org/abstract/document/11339899)
+
+Google Scholar search "communication protocols graph theory":
+
+[9] "[*Using Graph Theory to Improve Communication Protocols in AI-Powered IoT Networks *](https://yuktabpublisher.com/index.php/TMS/article/view/129) - published 2024
+
+[10] "[*A new graph theory based routing protocol for wireless sensor networks*](https://www.academia.edu/download/38126526/1211jgraph02.pdf) - published 2011
 
 
 From these searches I concluded I had enough from the papers themselves and the citations to go off of. [2] especially provides good 'key concept' sections, references PyG 2.0, and Graph Neural Networks/Edge Graph Intelligence. From the background I've developed in this course, this felt like the 'winner' in terms of a good spot to search for specific problems.
@@ -41,6 +50,141 @@ From these searches I concluded I had enough from the papers themselves and the 
 > 1) a laundry list, 
 > 2) a decision table and 
 > 3) a decision tree.
+
+The problem we're choosing to look at specifically is Edge Graph Intelligence communication protocols, or rather the lack thereof. Paper [2] discusses this at the architectural level and paper [10] shows autonomous, decision-making graph agents communicating over real wireless systems, but our current communication methods are not optimal for EGI and thus must evolve.
+
+### 1. Laundry list (requirements that force a new solution)
+
+#### Graph / Structural
+- Distributed graph state exchange
+- Incremental topology updates
+- Graph embedding communication
+- Dynamic graph evolution support
+
+#### Learning / Intelligence
+- Communication embedded in learning loop
+- Distributed inference coordination
+- Model-aware communication scheduling
+- Exchange of learned representations (not raw data)
+
+#### Agentic / Decision Layer
+- Communication triggered by agent decisions
+- Support for cooperative multi-agent behavior
+- Decentralized decision synchronization
+- Communication for action coordination (not just data)
+- Adaptive communication based on policy / reward
+
+#### Wireless / Physical Constraints (NEW)
+- Bandwidth and spectrum awareness
+- Interference-aware communication
+- Resource-constrained scheduling
+- Communication under unreliable links
+- Joint optimization of communication + learning + control
+
+### 2. Decision Table
+
+| System Need                             | Communication Style                         | Provides                                          | Missing for EGI + Agentic GNN                                                        |
+| --------------------------------------- | ------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Internet reliability                    | Packet transport                            | Delivery guarantees                               | No intelligence                                                                      |
+| IoT systems                             | Lightweight messaging                       | Efficient data transfer                           | No learning                                                                          |
+| Distributed ML                          | Gradient exchange                           | Model coordination                                | Not graph-aware                                                                      |
+| Edge Graph Intelligence                 | Graph-aware exchange                        | Distributed graph learning                        | Not decision/agent-aware                                                             |
+| Agentic Graph Wireless Intelligence | Needed: Agent-aware graph communication | Autonomous distributed intelligence over wireless | No existing protocol supports learning + graph + autonomy + wireless constraints |
+
+### 3. Decision Tree
+```
+Start: Need machines to communicate?
+├── Simple point-to-point data transfer sufficient?
+│     └── Yes → Basic networking (early transport protocols)
+│
+└── No → Need reliable communication across complex networks?
+      └── Yes → Internet-style packet transport
+            Provides: reliable delivery, routing, congestion control
+            Limitation: communication is data-agnostic, not intelligence-aware
+
+            ↓
+
+      Need communication for resource-constrained distributed devices?
+      └── Yes → Lightweight / IoT messaging
+            Provides: low overhead, async messaging, scalability
+            Limitation: moves data only, no learning or topology awareness
+
+            ↓
+
+      Need real-time coordination for cyber-physical / control systems?
+      └── Yes → Real-time deterministic communication
+            Provides: low latency, scheduling, reliability
+            Limitation: control-centric, not intelligence-centric
+
+            ↓
+
+      Need distributed computation across many machines?
+      └── Yes → Distributed systems / RPC communication
+            Provides: task coordination, synchronization
+            Limitation: node-centric, ignores graph relationships
+
+            ↓
+
+      Need distributed machine learning?
+      └── Yes → Model / gradient exchange (federated & distributed ML)
+            Provides: distributed training, privacy-preserving learning
+            Limitation:
+                - Model-centric, not graph-centric
+                - Static communication structure
+                - Weak support for dynamic edge systems
+
+            ↓
+
+      Need intelligence embedded in network structure?
+      └── Yes → Edge Graph Intelligence (EGI) begins
+            Requires:
+                - Graph-aware communication
+                - Distributed graph learning
+                - Topology-aware coordination
+                - Efficient graph state exchange
+
+            Existing protocols sufficient?
+            └── No → Graph-native communication required
+                     (FIRST OPEN PROBLEM)
+
+                     ↓
+
+            Need autonomous, decision-making distributed graph systems?
+            └── Yes → Agentic Graph Intelligence
+                     Requires:
+                        - Decision-aware communication
+                        - Multi-agent coordination
+                        - Policy / action synchronization
+                        - Communication embedded in control loop
+
+                     Existing graph communication sufficient?
+                     └── No → Agent-aware graph communication required
+                              (SECOND OPEN PROBLEM)
+
+                              ↓
+
+            Operating over real wireless / edge-constrained environments?
+            └── Yes → Wireless Agentic EGI
+                     Requires:
+                        - Bandwidth-aware communication
+                        - Interference-aware coordination
+                        - Resource-constrained scheduling
+                        - Communication-learning-control co-optimization
+
+                     Existing communication systems sufficient?
+                     └── No → Unified Graph + Learning + Agent + Wireless protocol needed
+                              (CORE UNSOLVED RESEARCH GAP)
+
+                              ↓
+
+                     FINAL OPEN PROBLEM:
+
+                     No existing communication protocol supports:
+                        • Graph-native state exchange
+                        • Distributed learning coordination
+                        • Autonomous agent decision synchronization
+                        • Adaptive operation under wireless/edge constraints
+```
 
 ## DA2
 > Make the entire slidedeck digital accessible, including providing descriptions of images, tables and identifying the reading order. For more details, see the Digital Accessibility Resource Guide. You can use the built-in Accessibility Checker in Microsoft Powerpoint to check your progress. To do this, go to the Review tab, and then to Accessibility Checker. A side panel will open and review the slide deck. Check the side panel after each slide. 
