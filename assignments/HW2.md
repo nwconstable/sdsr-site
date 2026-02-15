@@ -10,6 +10,28 @@ The paper's expected presentation date is
 ## CP2
 > Identify key sources, types of evidence. Include a list of sources. The potential source for the paper is a recent conference proceedings or a journal in the data science area. Students should visit library, web (e.g. Google Scholar, DBLP, ACM DL, IEEE DL for papers and amazon.com for book) and fellow students specializing in the data science research area, to check the availability of the sources before listing them. Provide summary of search results from DBLP and amazon.com to illustrate the effort. 
 
+Noah: I began by checking the [Project Resources](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/index.php?page=project) page, starting with Prof. Ce Yang at the UMN CFANS Ag. Robotics Laboratory. We reached out for comment and to start a discussion but never heard back in the limited time for this assignment. We also reviewed the linked resources, but found that beyond general awareness there was not much real info to go off of. Thus began stage two.
+
+Stage two was using Google Scholar combined with resultant paper citations. There were two main searches I did, particularly looking for surveys, and then I found other papers by checking the citations of those surveys and papers that cited the 'parent' survey. The search taxonomy and highlights are roughly as follows:
+
+Google Scholar search "drone edge computing":
+
+[1] "[*A Survey on the Convergence of Edge Computing and AI for UAVs: Opportunities and Challenges*](https://ieeexplore.ieee.org/document/9778241)" - published 2022
+
+[2] "[*Edge Graph Intelligence: Reciprocally Empowering Edge Networks With Graph Intelligence*](https://ieeexplore.ieee.org/document/10835104/)" - published 2025, cites [1], cites >300 other relevant papers
+
+Google Scholar Search "spatio temporal data, edge computing, drone":
+
+[3] "[*UAV-assisted Joint Mobile Edge Computing and Data Collection via Matching-enabled Deep Reinforcement Learning*](https://arxiv.org/abs/2502.07388)" - published 2025
+
+[4] "[*Edge Intelligence Enhanced Monte Carlo Tree Search for Virtually Coupled Train Set Optimal Control*](https://ieeexplore.ieee.org/document/10945675)" - published 2025
+
+[5] "[*Grape: Efficient Spatiotemporal Prediction Services with Stale Sensing Streams*](https://ieeexplore.ieee.org/document/11315101)" - published 2022
+
+[6] "[*Hybrid Semantic-Graph Clustering: Enhancing Customer Segmentation with LLMs and Graph Neural Networks*](https://ieeexplore.ieee.org/document/11170722)" - published 2022
+
+From these searches I concluded I had enough from the papers themselves and the citations to go off of. [2] especially provides good 'key concept' sections, references PyG 2.0, and Graph Neural Networks/Edge Graph Intelligence. From the background I've developed in this course, this felt like the 'winner' in terms of a good spot to search for specific problems.
+
 ## CP3
 > Summary of key readings. This summary is more than a list of summaries for individual research papers using the hints in the section on analyzing a research paper. A possible approach is to find a common abstract problems adressed by all the paper and develop a simple classification system to compare the solutions proposed in individual papers. Look at the "literature survey" sections of the papers in the reading list (particularly the thsoe from ACM Computing Surveys) for examples. Provide the summary of key readings in three formats: 
 > 1) a laundry list, 
