@@ -20,15 +20,19 @@ Google Scholar search "drone edge computing":
 
 [2] "[*Edge Graph Intelligence: Reciprocally Empowering Edge Networks With Graph Intelligence*](https://ieeexplore.ieee.org/document/10835104/)" - published 2025, cites [1], cites >300 other relevant papers
 
+[3] "[*Edge Intelligence Enhanced Monte Carlo Tree Search for Virtually Coupled Train Set Optimal Control*](https://ieeexplore.ieee.org/document/10945675)" - published 2025, cites [2]
+
+[4] "[*Grape: Efficient Spatiotemporal Prediction Services with Stale Sensing Streams*](https://ieeexplore.ieee.org/document/11315101)" - published 2022, cites [2]
+
+[5] "[*Hybrid Semantic-Graph Clustering: Enhancing Customer Segmentation with LLMs and Graph Neural Networks*](https://ieeexplore.ieee.org/document/11170722)" - published 2022, cites [2]
+
 Google Scholar Search "spatio temporal data, edge computing, drone":
 
-[3] "[*UAV-assisted Joint Mobile Edge Computing and Data Collection via Matching-enabled Deep Reinforcement Learning*](https://arxiv.org/abs/2502.07388)" - published 2025
+[6] "[*UAV-assisted Joint Mobile Edge Computing and Data Collection via Matching-enabled Deep Reinforcement Learning*](https://arxiv.org/abs/2502.07388)" - published 2025
 
-[4] "[*Edge Intelligence Enhanced Monte Carlo Tree Search for Virtually Coupled Train Set Optimal Control*](https://ieeexplore.ieee.org/document/10945675)" - published 2025
+[7] "[*AerialDB: A federated peer-to-peer spatio-temporal edge datastore for drone fleets*](https://arxiv.org/pdf/2508.07124)" - published 2025
 
-[5] "[*Grape: Efficient Spatiotemporal Prediction Services with Stale Sensing Streams*](https://ieeexplore.ieee.org/document/11315101)" - published 2022
 
-[6] "[*Hybrid Semantic-Graph Clustering: Enhancing Customer Segmentation with LLMs and Graph Neural Networks*](https://ieeexplore.ieee.org/document/11170722)" - published 2022
 
 From these searches I concluded I had enough from the papers themselves and the citations to go off of. [2] especially provides good 'key concept' sections, references PyG 2.0, and Graph Neural Networks/Edge Graph Intelligence. From the background I've developed in this course, this felt like the 'winner' in terms of a good spot to search for specific problems.
 
