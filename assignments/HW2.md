@@ -55,9 +55,9 @@ Should time permit, we may also be able to utilize the AIFS weather forecasting 
 
 [11] "[*Edge Computing: Vision and Challenges*](https://ieeexplore-ieee-org.ezp2.lib.umn.edu/document/7488250) - published 2016
 
-[12] [*An update to ECMWF's machine-learned weather forecast model AIFS*](https://arxiv.org/abs/2509.18994)
+[12] [*An update to ECMWF's machine-learned weather forecast model AIFS*](https://arxiv.org/abs/2509.18994) - published 2025
 
-[13] [*Distributed Online Convex Optimization with Nonseparable Costs and Constraints*](https://arxiv.org/abs/2602.10452v1)
+[13] [*Distributed Online Convex Optimization with Nonseparable Costs and Constraints*](https://arxiv.org/abs/2602.10452v1) - published 2026
 
 ## CP3
 > Summary of key readings. This summary is more than a list of summaries for individual research papers using the hints in the section on analyzing a research paper. A possible approach is to find a common abstract problems adressed by all the paper and develop a simple classification system to compare the solutions proposed in individual papers. Look at the "literature survey" sections of the papers in the reading list (particularly the thsoe from ACM Computing Surveys) for examples. Provide the summary of key readings in three formats: 
