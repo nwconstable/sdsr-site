@@ -36,7 +36,29 @@ Above I've outlined many areas for specific improvement, but my top 4 would be:
 
 *R: [A Survey on Uncertainty Quantiifcation Methods for Deep Learning](https://dl.acm.org/doi/10.1145/3786319)*
 
-This survey's anticipated presentation date is March 5th, 2026, by Group 6.
+### Technical Accuracy
+
+I think this presentation does very well in terms of technical accuracy. It goes over the concept of supervised learning in a way that is simple yet only says what is needed for the presentation. It reviews where uncertainty can come from both in terms of the data and the models themselves, then shows methods of dealing with that uncertainty in the models and the data, all of which look correct to me.
+
+### Presentation
+
+Presentation is good overall. I really appreciate that there are a lot of examples, such as the 'Methods of uncertainty in model' section that discusses Ensemble models and Bayesian Neural Networks.
+
+There could be more imagery. The only use I see is on the 'Problem Statement' slide where a seemignly arbitrary image was used. Any images used in the paper could be applied here, as they should share concepts, but there could also be image representations of BNNs or Ensemble methods, for example. There could also be images related to the taxonomy itself. 
+
+The Key Concepts slides should be organized and labelled according to the key concept they are addressing. For example, the first key concept slide could be called 'Key Concepts: Supervised Learning'. This differentiates it from the following key concept slides. I think it might also be helpful to include a 'Key Concept: Taxonomy' slide since I, for one, am not familiar with taxonomies or how they apply here, whereas I am familiar with supervised learning.
+
+Besides those points, I think the presentation is easy to follow.
+
+### Analysis
+
+There is little analysis of the contributions of the paper. The presenters say that the authors created a taxonomy, but we aren't shown or told (via text on the slide) what that taxonomy is. The 'Validation Methodology' slide talks very generally about the methods used such that I'm not actually certain what they were. Proofs? Case studies? Finally, there does not appear to be a critique of any of the assumptions (unless they're all being critiqued?). 
+
+### Specific Improvements
+
+1. Break Key Concepts slides out into their own (e.g. 'Key Concepts: Supervised Learning', 'Key Concepts: Uncertainty', 'Key Concepts: Methods of Dealing with Uncertainty'). 
+2. Discuss the contributed taxonomy more such that I know specifically how to use this information.
+3. Be clear about the assumption critique.
 
 ## CP2
 > Identify key sources, types of evidence. Include a list of sources. The potential source for the paper is a recent conference proceedings or a journal in the data science area. Students should visit library, web (e.g. Google Scholar, DBLP, ACM DL, IEEE DL for papers and amazon.com for book) and fellow students specializing in the data science research area, to check the availability of the sources before listing them. Provide summary of search results from DBLP and amazon.com to illustrate the effort. 
