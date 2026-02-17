@@ -47,12 +47,22 @@ Google Scholar search "communication protocols graph theory":
 
 From these searches I concluded I had enough from the papers themselves and the citations to go off of. *Edge Graph Intelligence: Reciprocally Empowering Edge Networks With Graph Intelligence* [2] especially provides good 'key concept' sections, references PyG 2.0, and Graph Neural Networks/Edge Graph Intelligence. From the background I've developed in this course, this felt like the 'winner' in terms of a good spot to search for specific problems.
 
-Joe:  Following up from Noah's found sources, I discovered several papers that covered topics where GNN bottlenecks existed and required 
+Joe:  I found that the main situation in which we would use Edge Computing is when the data collected from the edge sources is massive enough to make transmission more costly (time and memory) than training locally.  This was discussed in the seventh reference of *Edge Graph Intelligence* [2], *Edge Computing: Vision and Challenges* [11].
+
+The paper [11] also detailed several examples of edge computing in practice, with video analytics and the 'smart city' paradigm being a potential avenue for drone pathing and interception technology to take advantage of.  Video analytics is a common feature necessary for autonomous robots, and will likely be a part of any drone agent we use for our project.  The smart city paradigm is a framework in which centralized processing requests can be exectued by edge devices.
+
+Should time permit, we may also be able to utilize the AIFS weather forecasting model [12] to provide climate analysis and predictions for the drone agents or edge nodes that transmit to the drones.  We can also attempt to utilize the DOPBC method introduced in *Distributed Online Convex Optimization with Nonseparable Costs and Constraints* [13] that was published the week before this page was added to our website.
+
+[11] "[*Edge Computing: Vision and Challenges*](https://ieeexplore-ieee-org.ezp2.lib.umn.edu/document/7488250) - published 2016
+
+[12] [*An update to ECMWF's machine-learned weather forecast model AIFS*](https://arxiv.org/abs/2509.18994)
+
+[13] [*Distributed Online Convex Optimization with Nonseparable Costs and Constraints*](https://arxiv.org/abs/2602.10452v1)
 
 ## CP3
 > Summary of key readings. This summary is more than a list of summaries for individual research papers using the hints in the section on analyzing a research paper. A possible approach is to find a common abstract problems adressed by all the paper and develop a simple classification system to compare the solutions proposed in individual papers. Look at the "literature survey" sections of the papers in the reading list (particularly the thsoe from ACM Computing Surveys) for examples. Provide the summary of key readings in three formats: 
-> 1) a laundry list, 
-> 2) a decision table and 
+> 1) a laundry list; 
+> 2) a decision table; and 
 > 3) a decision tree.
 
 The problem we're choosing to look at specifically is Edge Graph Intelligence communication protocols, or rather the lack thereof. Paper [2] discusses this at the architectural level and paper [10] shows autonomous, decision-making graph agents communicating over real wireless systems, but our current communication methods are not optimal for EGI and thus must evolve.
