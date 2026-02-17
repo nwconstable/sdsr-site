@@ -3,7 +3,36 @@
 
 *Q: [Foundation Models for Scientific Discovery and Innovation](https://www.nationalacademies.org/read/29212/chapter/1):*
 
-Group three's presentation on this paper is expected to be on February 24th, 2026.
+### Technical Accuracy
+
+In terms of technical accuracy, I think this presentation does mostly fine. Since the paper is about the overall use of models in DoE departments and labs, there isn't much to touch on besides the differences between foundation models and traditional models. There is an implication on the 'Key Concepts (1)' slide that all traditional models are physic-informed, when that is not true. If VVUQ is not a specific contribution of this paper, it could be introduced earlier, along with the definition/long-form name.
+
+### Presentation
+
+From only looking at the slides I was a little lost. There seems to be context within the speaker notes that is planned to be given during the actual presentation, but without that part I feel there is context missing from the following areas:
+- 'Motivation & Significance': what is VVUQ? 
+- 'Contributions': these contributions are *insights* into the proposed process of using foundation models, but the 'insights' part is missing from the slide. This leads to me wondering how "traditional metrics do not capture scientific trust" is a contribution, since that just seems like a contextual statement.
+- 'Key Concepts (1)': specific examples of traditional models vs foundation models would be helpful
+- 'Key Concepts (2)': "algorithmic alloys" is out of place with the speaker notes and lacks context on its own, 'traditional solvers' could be explained more or given a quick example ("traditional solvers like..."), I think you could expand on what a hybrid model is or looks like here
+- 'Methods & Reasoning': The 'case studies' section doesn't list or show any case studies
+- 'Refinements': presented in a way that reads more like a 'future work' section as opposed to a 'revisions' section
+
+'Problem Statement', 'VVUQ and the DOE Context', 'Assumptions & Limitations' are all good!
+
+The language was easy to understand the whole way through. As mentioned, there are not a lot of examples or imagery. Examples could include the current DoE framework and how (or if) modeling fits into it, specific models to show the difference between foundation vs. traditional, and maybe specific cases where modeling has an impact on DoE work that is reflected in our physical world. 
+
+### Analysis
+
+I think there is room for more analysis. For example, the actual framework, if any, that the DoE proposes that incorporates foundation models is never discussed or shown. This means I can't reason why they should or should not use models in their work. For the 'Methods & Reasoning' slide I would like to see or hear about these case studies or "DOE-relevant examples".
+
+### Specific Improvements
+
+Above I've outlined many areas for specific improvement, but my top 4 would be:
+
+1. Define VVUQ at or before first usage.
+2. Specify somewhere on the 'Contributions' slide that the contributions of this paper are process insights.
+3. Give specific example(s) of foundation models vs. traditional models.
+4. Dive into one of the case studies to show how the DoE's insights apply.
 
 *R: [A Survey on Uncertainty Quantiifcation Methods for Deep Learning](https://dl.acm.org/doi/10.1145/3786319)*
 
