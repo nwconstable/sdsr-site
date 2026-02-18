@@ -1,7 +1,9 @@
 ## CA4
 > Review the presentation on papers Q and R using the following criteria: technical accuracy of review, presentation (easy to understand, examples), analysis and insights beyond the paper summary available on textbook web-site. You are expected to upload the electronic copy of your 500 word narrative (for each paper) summarizing the findings as well as a list of 3 to 4 specific improvements onto your class webpage. 
 
-*Q: [Foundation Models for Scientific Discovery and Innovation](https://www.nationalacademies.org/read/29212/chapter/1):*
+> *Paper Q: [Foundation Models for Scientific Discovery and Innovation](https://www.nationalacademies.org/read/29212/chapter/1)*
+
+> *[Slides](https://docs.google.com/presentation/d/1ISiUwjrlr6_gw5iCXOav2vGXCiMCqJEGmlbMmpZ2-9M/edit?slide=id.g3c32015df87_0_857#slide=id.g3c32015df87_0_857)*
 
 ### Technical Accuracy
 
@@ -34,7 +36,9 @@ Above I've outlined many areas for specific improvement, but my top 4 would be:
 3. Give specific example(s) of foundation models vs. traditional models.
 4. Dive into one of the case studies to show how the DoE's insights apply.
 
-*R: [A Survey on Uncertainty Quantiifcation Methods for Deep Learning](https://dl.acm.org/doi/10.1145/3786319)*
+> *Paper R: [A Survey on Uncertainty Quantiifcation Methods for Deep Learning](https://dl.acm.org/doi/10.1145/3786319)*
+
+> *[Slides](https://docs.google.com/presentation/d/1qWn_rmZaURBAsVu0fxBBvva1JBZBXnztZHFEJuHdEiM/present?slide=id.gc6f75fceb_0_0)*
 
 ### Technical Accuracy
 
@@ -257,6 +261,6 @@ Start: Need machines to communicate?
 ## DA2
 > Make the entire slidedeck digital accessible, including providing descriptions of images, tables and identifying the reading order. For more details, see the Digital Accessibility Resource Guide. You can use the built-in Accessibility Checker in Microsoft Powerpoint to check your progress. To do this, go to the Review tab, and then to Accessibility Checker. A side panel will open and review the slide deck. Check the side panel after each slide. 
 
-You can access the slides [here](..\images\HW2\3.SpatialDataStorageDA2Edit.pptx).  There were many recommended actions we followed up with using the 'Review' tool in PowerPoint, and some we chose to leave alone.
+You can access the digital accessible slides [here](..\images\HW2\3.SpatialDataStorageDA2Edit.pptx).  There were many recommended actions we followed up with using the 'Review' tool in PowerPoint, and some we chose to leave alone.
 
 24 instances of colored text were modified for easier legibility.  Ultimately we picked the darker colors since they contrasted more easily with the bright or white backgrounds.  We also ran 44 images through the [Image Description Generator](https://teachonline.asu.edu/image-accessibility-generator) to provide 136 instances of alternative text for users to take advantage of in the slides.  A merged cell recommendation was provided for the table on page 48, but we ultimately chose to ignore it. Merging the cells in that table did not provide any clarity on the data within the cells.  12 slides had shared titles that we slightly modified to make them distinct from each other.  Finally, we reviewed the reading order of 13 slides' content and confirmed that the given order made sense for each slide.

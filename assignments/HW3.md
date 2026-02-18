@@ -29,3 +29,5 @@
 
 ## DA3
 > Peer-review two other drafts, using the [Digital Accessibility Resource Guide](https://docs.google.com/document/d/186tC1DNCltOGQLC5CraoU9jnPf_Z0_Lc5jNHTJ53lEc/edit?tab=t.0#heading=h.yp9oi26yb5op) and [Accessibility Checker](https://support.microsoft.com/en-us/office/improve-accessibility-with-the-accessibility-checker-a16f6de0-2f39-4a2b-8bd8-5ad801426c7f). Write a peer-review summary and submit it. (Team G1 will peer-review teams G2 and G3 / G2 will peer-review G3 and G4 / ... / G8 will peer-review G9 and G1 / G9 will peer-review G1 and G2).
+
+Given the instructions, we will review the summaries for G3 and G4.

@@ -1,2 +1,4 @@
 ## DA4
 > Each group is expected to revise the slidedeck using the feedback from reviewers and submit the revised slidedeck to the web. Please ensure that the group website has a link to your material. 
+
+Our feedback will come from G1 and G2.
