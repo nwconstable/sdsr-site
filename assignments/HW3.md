@@ -72,9 +72,7 @@ You are told that the explainer works by learning a differentiable mask over edg
 *(2) Options (A), (B) and (D) are disqualified since the mask is learned over both nodes and edges.  The explainer leverages hidden states and messages in the message-passing layers, so (C) is uniquely correct.*
 
 ## CP4
-> Possible outline or overall structure for paper / project. Do include a justification comparing and contrasting your proposed paper / project with the summary of key readings. There should be a clear statement of the new aspects of your work. Look at the "literature survey and our contribution" sections of the papers in the reading list for examples. 
 
-## CP5
 > ### Midterm Slides: 
 > The slides should summarized Heilmeir Questions such that each questions should be addressed in 1-2 slides.
 > The questions are as follows:
@@ -87,14 +85,30 @@ You are told that the explainer works by learning a differentiable mask over edg
 > - Conclusions and Future Work (1 slide)
 > - Weekly Plan and Task (1 slide)
 > ### Validation Slide: 
->Choose a methodology similar to the ones used in the papers in the reading list. For example, experiments, analytial methods, case study, detailed illustrative examples, prototyping and demonstration of new capability, etc. There should be a clear plan to list the steps within each methodology. For example an experimental methodology should include a description of the experiment design listing the candidates to be compared, metrics of performance, values of fixed parameters, valuesets for variable parameters, benchmark datasets and computations, key assumptions, etc. ([Proposal example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_proposal.pdf), [Mid-term presentation example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_slides.pdf))
+> Choose a methodology similar to the ones used in the papers in the reading list. For example, experiments, analytial methods, case study, detailed illustrative examples, prototyping and demonstration of new capability, etc. There should be a clear plan to list the steps within each methodology. For example an experimental methodology should include a description of the experiment design listing the candidates to be compared, metrics of performance, values of fixed parameters, valuesets for variable parameters, benchmark datasets and computations, key assumptions, etc. ([Proposal example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_proposal.pdf), [Mid-term presentation example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_slides.pdf))
 > ###  Weekly Plan Slide: 
 > This slide should contain a table with 5 rows and 2 columns, where the column names are 'Weeks' and 'Task'. Each row will be filled with a 'Week' (e.g., 2/25 - 3/3) and a 'Task' (e.g., running experiments, etc.).
-> ### Formal Proposal: 
-> The proposal should encompass all slides, detailing the Heilmeier questions along with a weekly plan. It should include an introduction that briefly covers all six elements, along with the contributions. 
+
+- Possible outline or overall structure for paper / project. Do include a justification comparing and contrasting your proposed paper / project with the summary of key readings. There should be a clear statement of the new aspects of your work. Look at the "literature survey and our contribution" sections of the papers in the reading list for examples. 
+
+## CP5
+
+> ### Formal Proposal:
+> The proposal is a brief document addressing the Heimeler questions along with a weeky plan.  It should include an introduction that briefly covers all six elements, along with contribution claims
+
+- The proposal should encompass all slides, detailing the Heilmeier questions along with a weekly plan. It should include an introduction that briefly covers all six elements, along with the contributions. 
 
 
 ## DA3
+
 > Peer-review two other drafts, using the [Digital Accessibility Resource Guide](https://docs.google.com/document/d/186tC1DNCltOGQLC5CraoU9jnPf_Z0_Lc5jNHTJ53lEc/edit?tab=t.0#heading=h.yp9oi26yb5op) and [Accessibility Checker](https://support.microsoft.com/en-us/office/improve-accessibility-with-the-accessibility-checker-a16f6de0-2f39-4a2b-8bd8-5ad801426c7f). Write a peer-review summary and submit it. (Team G1 will peer-review teams G2 and G3 / G2 will peer-review G3 and G4 / ... / G8 will peer-review G9 and G1 / G9 will peer-review G1 and G2).
 
-Given the instructions, we will review the summaries for G3 and G4.
+Given the instructions, we will review the summary slides for G3 and G4.
+
+*G3 Review*
+
+G3, as of February 21, 2026, has not presented a summary of the edits they made to their assigned slides.  We were able to download a [copy of their slides](../images/HW3/G3DA_5.SpatialNetworks_21February2026.pptx) from their [webpage](https://sites.google.com/umn.edu/csci8715/hw2?authuser=0) on that date and review them using the Microsoft Review feature and checking it against the Digital Accessibility Resource Guide.
+
+*G4 Review*
+
+G4 provided before-and-after images to show the progress of their updates in DA2, as well as a downloadable version of their slides on their [webpage](https://docs.google.com/document/d/18EEd_bQajrHXqx3DOsff942Yudm-YXMPEO--UkIRUmg/edit?tab=t.0).  Reviewing our [copy](../images//HW3/G4DA_QueryProcessing_21February2026.pptx), downloaded on February 21, 2026, we found that...
