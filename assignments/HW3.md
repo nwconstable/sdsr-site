@@ -3,7 +3,7 @@
 
 The feedback for our slides was fairly positive overall.  There were, however, a few improvements that the feedback suggested.  Noah revised the slides based on their feedback, and then we reviewed and finalized the design of the edited slides together.
 
-Both reviews asked for more examples and/or imagery to help relate the ideas to real-world scenarios. To address this, Noah added wildfire prediction as an example of an objective that can be approached with either homogeneous data or hetereogeneous data.  The wildfire example included geographic maps for drought data and vegetation data, and he included text that indicated using both datasets would be heterogeneous while only using one would be homogeneous.  Noah also added an image of a chart to the *Contributions: Heterogeneity* and an image of various homogeneous and heterogeneous graph examples to the *???* slide.  I suggested we move the graph examples to the heterogeneity slide since it had better context on that slide than its initial placement.
+Both reviews asked for more examples and/or imagery to help relate the ideas to real-world scenarios. To address this, Noah added wildfire prediction as an example of an objective that can be approached with either homogeneous data or hetereogeneous data.  The wildfire example included geographic maps for drought data and vegetation data, and he included text that indicated using both datasets would be heterogeneous while only using one would be homogeneous.  Noah also added an image of a chart to the *Contributions: Heterogeneity* and an image of various homogeneous and heterogeneous graph examples to a new *Homogeneous vs Heterogeneous* slide.  I suggested we move the graph examples to the heterogeneity slide since the context was still fitting and the presentation flow was improved.
 
 One critique brought up from Group 3 was to relate *possible* applications to real-world applications.  In response, Noah added a slide about Relational Deep Learning (RDL) and how RDL connects to graph learning.  In addition, he provided the [MovieLens](https://movielens.org/) application as an example of a recommender system built by RDL.  The example included a photo of members of the team, and a glance of the website hosting the application.
 
@@ -21,28 +21,25 @@ You are building a GNN to predict large wildfires in the United States. You have
 - Köppen climate type per region
 - Historical wildfire incidents with location and date
 
-You must design a *heterogeneous* graph schema for PyG 2.0 that best captures causal structure for prediction.
+You must design a *heterogeneous* graph schema for PyG 2.0 that best captures causal structure for prediction.  Which of the following node/edge schema is **most appropriate** for a scalable heterogeneous GNN in PyG 2.0?
 
-Which of the following node/edge schema is **most appropriate** for a scalable heterogeneous GNN in PyG 2.0?
+- (A) A single node type, “Region”, with all features as node attributes and no edges.
 
-A. Single node type “Region” with all features (drought, vegetation, climate, wildfire count) as node attributes; no edges
+- (B) Node types of “Region” and “Wildfire” with edges of type `Region–Region` for adjacent regions, and `Region–Wildfire` when wildfires occurred in region.  The measures of drought, vegetation and climate type will be regional node features.
 
-B. Node types: “Region” and “Wildfire”; edges: `Region–Region` (adjacent regions), `Region–Wildfire` (wildfire occurred in region); drought, vegetation, climate as features on “Region” nodes
+- (C) Node types of “Drought”, “Vegetation”, “Climate” and “Wildfire”.  Edges between nodes such as `Wildfire-Climate` and `Wildfire-Wildfire` represent shared timestamps when present.
 
-C. Node types: “Drought”, “Vegetation”, “Climate”, “Wildfire”; fully connect all nodes at each timestamp
+- (D) A single node type of “Wildfire” with edges between wildfires in chronological order. All other data will be node features.
 
-D. Single node type “Wildfire” with edges between wildfires in temporal order; all other data as global graph features
+*Answer: (B).*
 
-Model solution (correct answer: B)
+*Reasoning:  Option B cleanly separates entities (regions, wildfires) into node types and uses edges to encode meaningful relations: spatial adjacency (Region–Region) and event occurrence (Region–Wildfire). This matches PyG 2.0’s heterogeneous and temporal capabilities, where “entities become nodes, primary-foreign key links become edges” and “heterogeneous graph data types, message passing… temporal graph handling” are first-class. By placing drought, vegetation, and climate as features on “Region” nodes, the model can learn causal patterns across space and time while remaining scalable and structurally interpretable.*
 
-Answer: B
-
-Reasoning:  
-Option B cleanly separates entities (regions, wildfires) into node types and uses edges to encode meaningful relations: spatial adjacency (Region–Region) and event occurrence (Region–Wildfire). This matches PyG 2.0’s heterogeneous and temporal capabilities, where “entities become nodes, primary-foreign key links become edges” and “heterogeneous graph data types, message passing… temporal graph handling” are first-class. By placing drought, vegetation, and climate as features on “Region” nodes, the model can learn causal patterns across space and time while remaining scalable and structurally interpretable.
+*Meanwhile, Option (A) has no edges and is thus not a graph system.  Option (D) is a homogeneous graph structure.  Option (C) fails to connect any nodes without a time component, such as climate and vegetation.*
 
 ### Question 2: Substructure attribution and explainer choice
 
-A PyG 2.0 explainer is applied to a social-network GNN that predicts whether a user is likely to commit fraud. The explainer outputs the following:
+A PyG 2.0 explainer is applied to a social-network GNN that predicts whether a user is likely to commit fraud. The explainer outputs the following details:
 
     The edge between **Tom** and **Robert** is highlighted as highly relevant
 
@@ -52,31 +49,27 @@ A PyG 2.0 explainer is applied to a social-network GNN that predicts whether a u
 
 You are told that the explainer works by learning a differentiable mask over edges and node features, and then re-running the model with masked messages to see if the prediction changes as little as possible.
 
-Which substructure attribution technique is being used?  
-- A. Feature Importance
-- B. SHAP
-- C. GraphMask
-- D. Counterfactual Reasoning
+1) Which substructure attribution technique is being used?  
 
-Which aspects of the GNN are directly exploited by this explainer?  
-Choose the most complete option.
-- A. Only node features
-- B. Only edge structure
-- C. Hidden states and messages in message passing
-- D. Global graph-level pooling only
+- (A) Feature Importance
+- (B) SHAP
+- (C) GraphMask
+- (D) Counterfactual Reasoning
 
+2) Which aspects of the GNN are directly exploited by this explainer?  Choose the most complete option.
 
-Model solution (correct answers: 1–C, 2–C)
+- (A) Only node features
+- (B) Only edge structure
+- (C) Hidden states and messages in message passing
+- (D) Global graph-level pooling only
 
-Answer 1: C — GraphMask
+*Answers: (C) and (C).*
 
-Answer 2: C — Hidden states and messages in message passing
+*Reasoning:*
 
-Reasoning:  
-The description—“learning a mask,” “masking messages,” and “re-computing the forward pass without changing the output”—matches GraphMask, which “uses vertex hidden states and messages at layer k… to predict a mask… and re-compute the forward pass with modified node states.” Feature Importance and SHAP (A, B) typically operate on features or inputs, not learned message masks. Counterfactual reasoning (D) would explicitly change outcomes. For part 2, the explainer clearly leverages hidden states and messages in the message-passing layers, not just raw features, edges alone, or global pooling, so C is uniquely correct.
+*(1) Key descriptions such as “learning a mask,” “masking messages,” and “re-computing the forward pass without changing the output” are part of GraphMask.  GraphMask uses vertex hidden states and messages at layer 'k' to predict a mask and re-compute the forward pass with modified node states.  Feature Importance (A) and SHAP (B) typically operate on features or inputs, not learned message masks. Counterfactual reasoning (D) would explicitly change outcomes.*
 
-
-
+*(2) Options (A), (B) and (D) are disqualified since the mask is learned over both nodes and edges.  The explainer leverages hidden states and messages in the message-passing layers, so (C) is uniquely correct.*
 
 ## CP4
 > Possible outline or overall structure for paper / project. Do include a justification comparing and contrasting your proposed paper / project with the summary of key readings. There should be a clear statement of the new aspects of your work. Look at the "literature survey and our contribution" sections of the papers in the reading list for examples. 
