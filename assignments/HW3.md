@@ -73,30 +73,24 @@ You are told that the explainer works by learning a differentiable mask over edg
 
 ## CP4
 
-> ### Midterm Slides: 
+> ### Midterm Slides ([example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_slides.pdf)): 
 > The slides should summarized Heilmeir Questions such that each questions should be addressed in 1-2 slides.
 > The questions are as follows:
-> - What are you trying to do ?: Problem Statement (1 slide)
-> - If we succeed, what difference do we think it will make ?: Significance of the problem (1 slide)
-> - Why is it hard ?: Challenges (1 slide)
-> - How does this get done, at present ?: Related Work and Our Contributions (1-2 slides)
-> - What is the new technical idea ? : Propsoed Approach (1-2 slide)
-> - Validation of listed contribution (experimental, analytical) (1-2 slides)
-> - Conclusions and Future Work (1 slide)
-> - Weekly Plan and Task (1 slide)
-> ### Validation Slide: 
-> Choose a methodology similar to the ones used in the papers in the reading list. For example, experiments, analytial methods, case study, detailed illustrative examples, prototyping and demonstration of new capability, etc. There should be a clear plan to list the steps within each methodology. For example an experimental methodology should include a description of the experiment design listing the candidates to be compared, metrics of performance, values of fixed parameters, valuesets for variable parameters, benchmark datasets and computations, key assumptions, etc. ([Proposal example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_proposal.pdf), [Mid-term presentation example](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/course_project/CP5_slides.pdf))
-> ###  Weekly Plan Slide: 
-> This slide should contain a table with 5 rows and 2 columns, where the column names are 'Weeks' and 'Task'. Each row will be filled with a 'Week' (e.g., 2/25 - 3/3) and a 'Task' (e.g., running experiments, etc.).
+> - Problem Statement (1 slide): What is the group trying to do?
+> - Significance of the problem (1 slide) : If the group succeeds, what difference does the group think it will make?
+> - Challenges (1 slide): Why is the problem hard?
+> - Related Work and its limitations (1-2 slides): How does the problem get address, at present? What are the limitations of the state-of-the-art approaches?
+> - Proposed Approach (1-2 slides): What is the new technical idea? How does it overcome the limitations of the state-of-the-art approaches? In what sense, is the proposed approach novel? In what sense, is it better than the state-of-the-art?
+> - Choice of validation methodology (experimental, analytical) (1-2 slides): Which validation methodology will the group use to evaluate the proposed approach? Choices include example, experiments, analytical methods, case study, detailed illustrative examples, prototyping and demonstration of new capability, etc. List key steps within chosen methodologies. You may look at published papers using the chosen methodology to identify these steps. For example, an experimental methodology may include a description of the experiment design listing the candidates to be compared, metrics of performance, values of fixed parameters, value sets for variable parameters, benchmark datasets and computations, key assumptions, etc.
+> - Conclusions and Future Work (1 slide).
+> - Weekly Plan and Task (1 slide): This slide should contain a table with 5 rows and 2 columns, where the column names are 'Weeks' and 'Task'. Each row will be filled with a 'Week' (e.g., 3/3 - 3/10) and a 'Task' (e.g., running experiments, etc.).
 
-- Possible outline or overall structure for paper / project. Do include a justification comparing and contrasting your proposed paper / project with the summary of key readings. There should be a clear statement of the new aspects of your work. Look at the "literature survey and our contribution" sections of the papers in the reading list for examples. 
+[Slides](https://docs.google.com/presentation/d/1pp1eMybWMKjVxGp3S8sZl97ZD5LoHi476q4QwcPebTY/edit?usp=sharing)
 
 ## CP5
 
 > ### Formal Proposal:
-> The proposal is a brief document addressing the Heimeler questions along with a weeky plan.  It should include an introduction that briefly covers all six elements, along with contribution claims
-
-- The proposal should encompass all slides, detailing the Heilmeier questions along with a weekly plan. It should include an introduction that briefly covers all six elements, along with the contributions. 
+> The proposal is a brief document describing the components listed in CP4 using narrative, pictures, tables, etc. You may follow the format of this example from previous year. 
 
 [Proposal Paper (Word Doc)](../images/HW3/G2_Proposal.docx)
 
