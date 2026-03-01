@@ -98,7 +98,7 @@ You are told that the explainer works by learning a differentiable mask over edg
 
 - The proposal should encompass all slides, detailing the Heilmeier questions along with a weekly plan. It should include an introduction that briefly covers all six elements, along with the contributions. 
 
-[Proposal Paper (Word Doc)](../images/HW3/G2_Proposal.docx)
+Proposal Paper: [Docx](../images/HW3/G2_Proposal.docx), [PDF](../images/HW3/G2_Proposal.pdf)
 
 ## DA3
 
