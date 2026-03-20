@@ -1,4 +1,5 @@
-"""build_graph.py
+"""
+build_graph.py
 
 Converts Minnesota wetlands GIS data (GeoDataFrame) into a PyTorch Geometric
 Data object suitable for GNN training.
@@ -17,6 +18,7 @@ from __future__ import annotations
 import heapq
 import random
 from pathlib import Path
+import sys
 from typing import Tuple
 
 import geopandas as gpd
@@ -25,16 +27,15 @@ import torch
 from shapely.geometry import box
 from torch_geometric.data import Data
 
-
 # ---------------------------------------------------------------------------
 # Grid helpers
 # ---------------------------------------------------------------------------
-
 def create_grid(
     gdf: gpd.GeoDataFrame,
     grid_size: int = 50,
 ) -> Tuple[np.ndarray, float, float, float, float, float, float]:
-    """Create a 2D grid of shapely Polygons over the bounding box of *gdf*.
+    """
+    Create a 2D grid of shapely Polygons over the bounding box of *gdf*.
 
     Node ordering is row-major with row 0 at the bottom (south).
     Node index = row * grid_size + col
@@ -50,6 +51,7 @@ def create_grid(
     cell_h = (maxy - miny) / grid_size
 
     cell_polys = np.empty(grid_size * grid_size, dtype=object)
+
     for row in range(grid_size):
         for col in range(grid_size):
             x0 = minx + col * cell_w
@@ -58,30 +60,32 @@ def create_grid(
 
     return cell_polys, minx, miny, maxx, maxy, cell_w, cell_h
 
-
 def assign_wetland_features(
     gdf: gpd.GeoDataFrame,
     cell_polys: np.ndarray,
 ) -> np.ndarray:
-    """Return a float32 array of shape (N,) with wetland_presence in {0.0, 1.0}.
+    """
+    Return a float32 array of shape (N,) with wetland_presence in {0.0, 1.0}.
 
     Uses a spatial index (STRtree) for efficient intersection queries.
     """
     sindex = gdf.sindex
     wetland_presence = np.zeros(len(cell_polys), dtype=np.float32)
+
     for i, cell in enumerate(cell_polys):
         candidates = list(sindex.intersection(cell.bounds))
+
         if candidates and gdf.iloc[candidates].intersects(cell).any():
             wetland_presence[i] = 1.0
-    return wetland_presence
 
+    return wetland_presence
 
 # ---------------------------------------------------------------------------
 # Graph construction
 # ---------------------------------------------------------------------------
-
 def build_edge_index(grid_size: int) -> torch.Tensor:
-    """Build bidirectional 4-neighbor edge_index for a *grid_size* x *grid_size* grid.
+    """
+    Build bidirectional 4-neighbor edge_index for a *grid_size* x *grid_size* grid.
 
     Returns
     -------
@@ -94,20 +98,31 @@ def build_edge_index(grid_size: int) -> torch.Tensor:
 
     for r in range(grid_size):
         for c in range(grid_size):
-            if c + 1 < grid_size:               # right neighbour
+            # Right Neighbor
+            if c + 1 < grid_size:
                 src += [_idx(r, c), _idx(r, c + 1)]
                 dst += [_idx(r, c + 1), _idx(r, c)]
-            if r + 1 < grid_size:               # upper neighbour
+
+            # Left Neighbor
+            if c - 1 >= 0:
+                src += [_idx(r, c), _idx(r, c - 1)]
+                dst += [_idx(r, c - 1), _idx(r, c)]
+
+            # Upper Neighbor
+            if r + 1 < grid_size:
                 src += [_idx(r, c), _idx(r + 1, c)]
                 dst += [_idx(r + 1, c), _idx(r, c)]
 
-    return torch.tensor([src, dst], dtype=torch.long)
+            # Lower Neighbor
+            if r - 1 >= 0:
+                src += [_idx(r, c), _idx(r - 1, c)]
+                dst += [_idx(r - 1, c), _idx(r, c)]
 
+    return torch.tensor([src, dst], dtype=torch.long)
 
 # ---------------------------------------------------------------------------
 # Dijkstra labels
 # ---------------------------------------------------------------------------
-
 def compute_dijkstra_labels(
     wetland_presence: np.ndarray,
     grid_size: int,
@@ -116,7 +131,8 @@ def compute_dijkstra_labels(
     land_cost: float = 1.0,
     seed: int | None = None,
 ) -> Tuple[np.ndarray, int]:
-    """Shortest-path distance from every node to *goal_node*.
+    """
+    Shortest-path distance from every node to *goal_node*.
 
     Edge cost equals the traversal cost of the *destination* node:
       - wetland -> wetland_cost (default 5)
@@ -131,6 +147,7 @@ def compute_dijkstra_labels(
     goal_node : int
     """
     N = grid_size * grid_size
+
     if goal_node is None:
         rng = random.Random(seed)
         goal_node = rng.randint(0, N - 1)
@@ -139,11 +156,14 @@ def compute_dijkstra_labels(
 
     # Adjacency list: adj[u] = [(v, cost_of_v), ...]
     adj: list[list[tuple[int, float]]] = [[] for _ in range(N)]
+
     for r in range(grid_size):
         for c in range(grid_size):
             u = r * grid_size + c
+
             for dr, dc in ((0, 1), (0, -1), (1, 0), (-1, 0)):
                 nr, nc = r + dr, c + dc
+
                 if 0 <= nr < grid_size and 0 <= nc < grid_size:
                     v = nr * grid_size + nc
                     adj[u].append((v, node_cost[v]))
@@ -151,30 +171,33 @@ def compute_dijkstra_labels(
     dist = np.full(N, np.inf, dtype=np.float64)
     dist[goal_node] = 0.0
     pq: list[tuple[float, int]] = [(0.0, goal_node)]
+
     while pq:
         d, u = heapq.heappop(pq)
+
         if d > dist[u]:
             continue
+
         for v, w in adj[u]:
             nd = d + w
+
             if nd < dist[v]:
                 dist[v] = nd
                 heapq.heappush(pq, (nd, v))
 
     return dist.astype(np.float32), goal_node
 
-
 # ---------------------------------------------------------------------------
 # Main builder
 # ---------------------------------------------------------------------------
-
 def build_pyg_data(
     gdf: gpd.GeoDataFrame,
     grid_size: int = 50,
     goal_node: int | None = None,
     seed: int | None = 42,
 ) -> Tuple[Data, int]:
-    """Build a PyTorch Geometric Data object from the wetlands GeoDataFrame.
+    """
+    Build a PyTorch Geometric Data object from the wetlands GeoDataFrame.
 
     Parameters
     ----------
@@ -197,6 +220,7 @@ def build_pyg_data(
     print("  Assigning wetland_presence features (may take a moment)...")
     wetland_presence = assign_wetland_features(gdf, cell_polys)
     n_wet = int(wetland_presence.sum())
+
     print(f"  Wetland cells : {n_wet} / {len(cell_polys)} "
           f"({100 * n_wet / len(cell_polys):.1f}%)")
 
@@ -220,20 +244,18 @@ def build_pyg_data(
 
     data = Data(
         x=torch.tensor(wetland_presence, dtype=torch.float).unsqueeze(1),  # (N, 1)
-        edge_index=edge_index,                                               # (2, E)
-        y=torch.tensor(labels, dtype=torch.float).unsqueeze(1),             # (N, 1)
-        pos=pos,                                                             # (N, 2)
+        edge_index=edge_index,                                             # (2, E)
+        y=torch.tensor(labels, dtype=torch.float).unsqueeze(1),            # (N, 1)
+        pos=pos,                                                           # (N, 2)
         grid_size=grid_size,
         goal_node=goal_node,
     )
 
     return data, goal_node
 
-
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
-
 if __name__ == "__main__":
     from load_data import gdf  # noqa: E402
 
@@ -243,3 +265,4 @@ if __name__ == "__main__":
     print(f"edge_index : {data.edge_index.shape}")
     print(f"y          : {data.y.shape}")
     print(f"Goal node  : {goal}")
+    sys.exit(1)
