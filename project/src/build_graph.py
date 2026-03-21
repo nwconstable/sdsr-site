@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import heapq
 import random
-from pathlib import Path
 import sys
 from typing import Tuple
 
@@ -98,26 +97,19 @@ def build_edge_index(grid_size: int) -> torch.Tensor:
 
     for r in range(grid_size):
         for c in range(grid_size):
-            # Right Neighbor
+            # Right neighbor: generate once and add both directions
             if c + 1 < grid_size:
-                src += [_idx(r, c), _idx(r, c + 1)]
-                dst += [_idx(r, c + 1), _idx(r, c)]
+                u = _idx(r, c)
+                v = _idx(r, c + 1)
+                src += [u, v]
+                dst += [v, u]
 
-            # Left Neighbor
-            if c - 1 >= 0:
-                src += [_idx(r, c), _idx(r, c - 1)]
-                dst += [_idx(r, c - 1), _idx(r, c)]
-
-            # Upper Neighbor
+            # Upper neighbor (next row): generate once and add both directions
             if r + 1 < grid_size:
-                src += [_idx(r, c), _idx(r + 1, c)]
-                dst += [_idx(r + 1, c), _idx(r, c)]
-
-            # Lower Neighbor
-            if r - 1 >= 0:
-                src += [_idx(r, c), _idx(r - 1, c)]
-                dst += [_idx(r - 1, c), _idx(r, c)]
-
+                u = _idx(r, c)
+                v = _idx(r + 1, c)
+                src += [u, v]
+                dst += [v, u]
     return torch.tensor([src, dst], dtype=torch.long)
 
 # ---------------------------------------------------------------------------
@@ -265,4 +257,4 @@ if __name__ == "__main__":
     print(f"edge_index : {data.edge_index.shape}")
     print(f"y          : {data.y.shape}")
     print(f"Goal node  : {goal}")
-    sys.exit(1)
+    sys.exit(0)
