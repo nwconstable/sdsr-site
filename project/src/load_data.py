@@ -32,24 +32,26 @@ def validate_geopackage() -> None:
 ##########################################################
 ## Main
 ##########################################################
-print("Validating GeoPackage integrity...")
-validate_geopackage()
-print("Loading GeoPackage with GeoPandas...")
-gdf = gpd.read_file(GPKG_PATH, layer=LAYER_NAME)
+
+def load_gdf():
+	print("Validating GeoPackage integrity...")
+	validate_geopackage()
+	print("Loading GeoPackage with GeoPandas...")
+	return gpd.read_file(GPKG_PATH, layer=LAYER_NAME)
+
 
 if __name__ == "__main__":
-    print(gdf.head())
-    #   attribute                 wetland_type     acres hgm_code  ... cow_class1 circ39_class    hgm_symbol                                           geometry
-    # 0     PEM1A  Freshwater Emergent Wetland  5.135776   TEFLVR  ...        EM1            1  Mineral Flat  MULTIPOLYGON (((369426 5026428, 369416 5026458...
-    # 1     PEM1A  Freshwater Emergent Wetland  3.194084   LOFPTH  ...        EM1            1         Lotic  MULTIPOLYGON (((369557.153 5026549.41, 369550 ...
-    # 2     PEM1A  Freshwater Emergent Wetland  0.400845   LOFPTH  ...        EM1            1         Lotic  MULTIPOLYGON (((364653 5026620, 364647 5026647...
-    # 3     PEM1A  Freshwater Emergent Wetland  1.641549   TEFLVR  ...        EM1            1  Mineral Flat  MULTIPOLYGON (((362966.94 5026694.963, 362967....
-    # 4     PEM1C  Freshwater Emergent Wetland  1.325967   TEBAVR  ...        EM1            3    Depression  MULTIPOLYGON (((371268 5027376, 371268 5027378...
+	gdf = load_gdf()
+	print(gdf.head())
+	#   attribute                 wetland_type     acres hgm_code  ... cow_class1 circ39_class    hgm_symbol                                           geometry
+	# 0     PEM1A  Freshwater Emergent Wetland  5.135776   TEFLVR  ...        EM1            1  Mineral Flat  MULTIPOLYGON (((369426 5026428, 369416 5026458...
+	# 1     PEM1A  Freshwater Emergent Wetland  3.194084   LOFPTH  ...        EM1            1         Lotic  MULTIPOLYGON (((369557.153 5026549.41, 369550 ...
+	# 2     PEM1A  Freshwater Emergent Wetland  0.400845   LOFPTH  ...        EM1            1         Lotic  MULTIPOLYGON (((364653 5026620, 364647 5026647...
+	# 3     PEM1A  Freshwater Emergent Wetland  1.641549   TEFLVR  ...        EM1            1  Mineral Flat  MULTIPOLYGON (((362966.94 5026694.963, 362967....
+	# 4     PEM1C  Freshwater Emergent Wetland  1.325967   TEBAVR  ...        EM1            3    Depression  MULTIPOLYGON (((371268 5027376, 371268 5027378...
 
-    #print("Saving to CSV...")
-    #gdf.to_csv(DATA_DIR / "geoWetlands.csv", index=False)
+	#print("Saving to CSV...")
+	#gdf.to_csv(DATA_DIR / "geoWetlands.csv", index=False)
 
-    print("Done.")
-    sys.exit(0)
-else:
-	print("load_data ran successfully...")
+	print("Done.")
+	sys.exit(0)
