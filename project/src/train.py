@@ -11,7 +11,6 @@ train_centralized  : train WetlandGCN on the full graph (centralized baseline)
 
 from __future__ import annotations
 
-import copy
 import sys
 
 import torch
@@ -62,7 +61,6 @@ def train_centralized(
 if __name__ == "__main__":
     # Build a tiny 2x5 grid (10 nodes) with synthetic wetland features and
     # hand-crafted distance targets so no GeoPackage file is needed.
-    import numpy as np
 
     ROWS, COLS = 2, 5
     N = ROWS * COLS
