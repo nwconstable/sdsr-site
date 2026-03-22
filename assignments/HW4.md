@@ -1,13 +1,15 @@
 ## CP6
 > Submit a review of the project proposal and presentations. Each team should submit approx. 500 words review using the following [form](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/CSCI-8715_Project_presentation_review.docx). 
 
-Group 3 Review:
+#### Group 3 Review:
 - [Word Doc](../images/HW4/CSCI-8715_Project_presentation_review.docx)
 - [PDF](../images/HW4/CSCI-8715_Project_presentation_review.pdf)
 > Submit a review of the project proposal and presentations. Each team should submit approx. 500 words review using the following [form](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/CSCI-8715_Project_presentation_review.docx).
 
 #### Spatial Temporal Rush-Hour Traffic Local Co-location Detection and Spatial Equity (G6)
- _Website: [Link](https://sites.google.com/umn.edu/ml-cyl/about?authuser=2); Slides: [PDF](../images/HW4/G6_CP4%20Midterm%20slides.pdf), [Microsoft PPTX](../images/HW4/G6_CP4%20Midterm%20slides.pptx); Proposal [PDF](../images/HW4/G6_CP5-Proposal.pdf) (All accessed March 20th, 2026)_
+ - Website [Link](https://sites.google.com/umn.edu/ml-cyl/about?authuser=2) (Accessed March 20th, 2026)
+ - Slides: [PDF](../images/HW4/G6_CP4%20Midterm%20slides.pdf), [Microsoft PPTX](../images/HW4/G6_CP4%20Midterm%20slides.pptx) (Accessed March 20th, 2026)
+ - Proposal [PDF](../images/HW4/G6_CP5-Proposal.pdf) (Accessed March 20th, 2026)
 
  Group 6 intends to utilize methods from both a [co-location pattern discovery paper](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.GISCIENCE.2018.10) and a [spatial co-location pattern discovery paper](https://www.sciencedirect.com/science/article/pii/S0143622818309081) for traffic data to find patterns in rush-hour traffic.  Their main contribution, the Equity-aware participation Index (EPI), is the novel part of their proposed project and will evaluate the results of the co-location analysis.  The Group clearly stated their intent in their proposal paper and slides: discover patterns that can help inform policy makers.
  
