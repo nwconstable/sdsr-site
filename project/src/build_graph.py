@@ -249,8 +249,9 @@ def build_pyg_data(
 # CLI entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    from load_data import gdf  # noqa: E402
+    from load_data import load_gdf  # noqa: E402
 
+    gdf = load_gdf()
     data, goal = build_pyg_data(gdf, grid_size=50, seed=42)
     print(data)
     print(f"x          : {data.x.shape}")
