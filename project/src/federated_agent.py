@@ -238,16 +238,16 @@ if __name__ == "__main__":
     # Now repeat training until the goal node is reached by either node
     while (node_a.current_loc is not goal_node) and (node_b.current_loc is not goal_node):
         # Update each node's current location
-        node_a.current_loc = node_a.local_data.get("location", node_a.current_loc)
-        node_b.current_loc = node_b.local_data.get("location", node_b.current_loc)
+        node_a.current_loc = node_a.local_data.get("location")
+        node_b.current_loc = node_b.local_data.get("location")
 
         # Node training
         node_a.train_local(data, radius=3, epochs=10, lr=1e-3)
         node_b.train_local(data, radius=3, epochs=10, lr=1e-3)
 
-        print(f"Node A location       : {node_a.local_data.get('location')}")
+        print(f"Node A moved location : {node_a.local_data.get('location')}")
         print(f"Node A loss           : {node_a.local_data.get('last_loss')}")
-        print(f"Node B location       : {node_b.local_data.get('location')}")
+        print(f"Node B moved location : {node_b.local_data.get('location')}")
         print(f"Node B loss           : {node_b.local_data.get('last_loss')}")
 
         # Central commands
