@@ -3,6 +3,7 @@ import sys
 from typing import Any, Dict, List, Optional, Union
 import uuid
 import random
+import numpy as np
 
 import torch
 import torch.nn.functional as F
@@ -185,6 +186,61 @@ class CentralAgent:
         """Broadcast global parameters to all nodes"""
         for node in self.nodes:
             node.receive_global_params(self.global_params)
+
+#
+# Training Functinon
+#
+def train_fedavg(
+    data: Data,
+    partitions: list[np.array],
+    channel: CommunicationChannel,
+    epochs: int,
+    local_steps: int,
+    lr: float = 1e-3,
+) -> tuple[list[float], WetlandGCN]:
+    """
+    data: Full graph data object
+    partitions: List of node index arrays for each partition (e.g., [np.array([0,1,2]), np.array([3,4,5])])
+    channel: The Communication channel for sending/receiving model updates between nodes and central agent
+    epochs: Number of global epochs to train for
+    local_steps: Number of local training steps to perform at each node before aggregation
+    lr: Learning rate for local training
+    """
+    # Initialize central agent and node agents based on partitions
+    central = CentralAgent()
+    nodes = [NodeAgent(node_id=f"node_{i}") for i in range(len(partitions))]
+    
+    for node in nodes:
+        central.register_node(node)
+
+    # Track global loss curve
+    global_loss_curve = []
+
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}/{epochs}")
+
+        # Each node trains locally on its partition of the data
+        for i, node in enumerate(nodes):
+            partition_idx = partitions[i]
+            partition_data = Data(
+                x=data.x[partition_idx],
+                edge_index=subgraph(partition_idx, data.edge_index)[0],
+                y=data.y[partition_idx]
+            )
+            node.train_local(partition_data, epochs=local_steps, lr=lr)
+
+        # Central agent aggregates updates from all nodes
+        updates = [node.send_local_update() for node in nodes]
+        central.aggregate_updates(updates)
+
+        # Central agent broadcasts new global parameters to all nodes
+        central.broadcast_params()
+
+        # Optionally evaluate global model on a validation set here and track loss curve
+
+    # Return final global loss curve and trained global model (if applicable)
+    return global_loss_curve, None  # Placeholder for returning trained model
+
 
 #################################################################################
 # Example usage (Run as script)
