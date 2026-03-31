@@ -21,9 +21,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
-from torch_geometric.utils import subgraph as pyg_subgraph
 
 from model import WetlandGCN
+from partition import build_local_subgraph
 
 if TYPE_CHECKING:
     # Imported only for type-checking; comms.py is implemented in Issue #2.
@@ -62,24 +62,6 @@ def train_centralized(
         losses.append(loss.item())
 
     return losses
-
-
-# ---------------------------------------------------------------------------
-# Shared helper
-# ---------------------------------------------------------------------------
-
-def _build_local_subgraph(data: Data, node_indices: np.ndarray) -> Data:
-    """Return a new PyG Data restricted to *node_indices* (global).
-
-    Edges where either endpoint is outside the partition are dropped.
-    Nodes are re-indexed to 0 .. len(node_indices)-1.
-    """
-    global_idx = torch.tensor(node_indices, dtype=torch.long)
-    sub_ei, _ = pyg_subgraph(
-        global_idx, data.edge_index,
-        relabel_nodes=True, num_nodes=data.num_nodes,
-    )
-    return Data(x=data.x[global_idx], edge_index=sub_ei, y=data.y[global_idx])
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +113,7 @@ def train_gossip(
 
     drone_models: list[WetlandGCN] = [WetlandGCN() for _ in range(K)]
     optimizers = [torch.optim.Adam(m.parameters(), lr=lr) for m in drone_models]
-    local_subgraphs = [_build_local_subgraph(data, idx) for idx in partitions]
+    local_subgraphs = [build_local_subgraph(data, idx) for idx in partitions]
 
     losses: list[float] = []
 

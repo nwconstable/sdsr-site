@@ -14,6 +14,7 @@ from torch_geometric.data import Data
 from torch_geometric.utils import subgraph
 
 from model import WetlandGCN
+from partition import build_local_subgraph
 
 if TYPE_CHECKING:
     # comms.py is implemented in Issue #2
@@ -247,16 +248,7 @@ def train_fedavg(
 
         # Each node trains locally on its partition
         for i, node in enumerate(nodes):
-            partition_idx = torch.tensor(partitions[i], dtype=torch.long)
-            sub_edge_index, _ = subgraph(
-                partition_idx, data.edge_index,
-                relabel_nodes=True, num_nodes=data.num_nodes,
-            )
-            partition_data = Data(
-                x=data.x[partition_idx],
-                edge_index=sub_edge_index,
-                y=data.y[partition_idx],
-            )
+            partition_data = build_local_subgraph(data, partitions[i])
             node.train_local(
                 partition_data, epochs=local_steps, lr=lr,
                 num_threads=num_threads, time_budget_ms=time_budget_ms,
