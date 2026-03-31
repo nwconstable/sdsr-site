@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 import sys
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import uuid
 import random
+import time
 import numpy as np
 
 import torch
@@ -11,6 +14,10 @@ from torch_geometric.data import Data
 from torch_geometric.utils import subgraph
 
 from model import WetlandGCN
+
+if TYPE_CHECKING:
+    # comms.py is implemented in Issue #2
+    from comms import CommunicationChannel
 
 #
 # Node Agent Class
@@ -76,14 +83,19 @@ class NodeAgent:
         radius: int = 2,
         epochs: int = 5,
         lr: float = 1e-3,
+        num_threads: int = 4,
+        time_budget_ms: int | None = None,
     ) -> Dict[str, torch.Tensor]:
         """
-        training_data: Full graph data object (PyG Data or compatible dict)
-        location: Node index to center the local subset around (drone location). If None, default to current_loc
-        radius: Number of hops in the grid graph to include in the local subset (e.g
-                radius=1 includes immediate neighbors, radius=2 includes neighbors of neighbors, etc.)
-        epochs: Number of local training epochs
-        lr: Learning rate for local training
+        training_data  : Full graph data object (PyG Data or compatible dict)
+        location       : Node index to center the local subset around. Defaults to current_loc
+        radius         : Hop radius for local subset (1 = immediate neighbours)
+        epochs         : Max local training epochs (may exit early via time_budget_ms)
+        lr             : Learning rate
+        num_threads    : PyTorch CPU thread count.  Default 4 (ARM Cortex-A72 /
+                         Jetson Nano class).  Override to simulate faster/slower hardware.
+        time_budget_ms : Wall-clock ms budget for the gradient loop.  Exits early when
+                         the budget is consumed.  None = no constraint.
         """
         if isinstance(training_data, dict):
             training_data = Data(**training_data)
@@ -107,8 +119,14 @@ class NodeAgent:
         sub_y = training_data.y[subset_idx]
 
         model = WetlandGCN(hidden_channels=32)
+        if self.model_params:  # initialise from last broadcast weights if available
+            model.load_state_dict(self.model_params)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
         model.train()
+
+        _prev_threads = torch.get_num_threads()
+        torch.set_num_threads(num_threads)
+        _t0 = time.perf_counter()
 
         losses: List[float] = []
 
@@ -119,6 +137,13 @@ class NodeAgent:
             loss.backward()
             optimizer.step()
             losses.append(loss.item())
+            if (
+                time_budget_ms is not None
+                and (time.perf_counter() - _t0) * 1000 >= time_budget_ms
+            ):
+                break
+
+        torch.set_num_threads(_prev_threads)
 
         self.local_data.update(
         {
@@ -141,7 +166,7 @@ class NodeAgent:
         return {
             "node_id": self.node_id,
             "params": self.model_params,
-            "data_size": len(self.local_data)
+            "data_size": self.local_data.get("trained_nodes", 1),
         }
 
 #
@@ -192,54 +217,73 @@ class CentralAgent:
 #
 def train_fedavg(
     data: Data,
-    partitions: list[np.array],
+    partitions: list[np.ndarray],
     channel: CommunicationChannel,
     epochs: int,
     local_steps: int,
     lr: float = 1e-3,
+    num_threads: int = 4,
+    time_budget_ms: int | None = None,
 ) -> tuple[list[float], WetlandGCN]:
     """
-    data: Full graph data object
-    partitions: List of node index arrays for each partition (e.g., [np.array([0,1,2]), np.array([3,4,5])])
-    channel: The Communication channel for sending/receiving model updates between nodes and central agent
-    epochs: Number of global epochs to train for
-    local_steps: Number of local training steps to perform at each node before aggregation
-    lr: Learning rate for local training
+    data           : Full graph data object
+    partitions     : List of node index arrays for each partition
+    channel        : CommunicationChannel — governs comm schedule and dropout
+    epochs         : Number of global training rounds
+    local_steps    : Max gradient steps each node takes locally per round
+    lr             : Learning rate for local training
+    num_threads    : PyTorch CPU thread count per node (default 4 = Jetson Nano class)
+    time_budget_ms : Wall-clock ms budget for each node's gradient loop; None = no limit
     """
-    # Initialize central agent and node agents based on partitions
     central = CentralAgent()
     nodes = [NodeAgent(node_id=f"node_{i}") for i in range(len(partitions))]
-    
     for node in nodes:
         central.register_node(node)
 
-    # Track global loss curve
-    global_loss_curve = []
+    global_loss_curve: list[float] = []
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}/{epochs}")
 
-        # Each node trains locally on its partition of the data
+        # Each node trains locally on its partition
         for i, node in enumerate(nodes):
-            partition_idx = partitions[i]
+            partition_idx = torch.tensor(partitions[i], dtype=torch.long)
+            sub_edge_index, _ = subgraph(
+                partition_idx, data.edge_index,
+                relabel_nodes=True, num_nodes=data.num_nodes,
+            )
             partition_data = Data(
                 x=data.x[partition_idx],
-                edge_index=subgraph(partition_idx, data.edge_index)[0],
-                y=data.y[partition_idx]
+                edge_index=sub_edge_index,
+                y=data.y[partition_idx],
             )
-            node.train_local(partition_data, epochs=local_steps, lr=lr)
+            node.train_local(
+                partition_data, epochs=local_steps, lr=lr,
+                num_threads=num_threads, time_budget_ms=time_budget_ms,
+            )
 
-        # Central agent aggregates updates from all nodes
-        updates = [node.send_local_update() for node in nodes]
-        central.aggregate_updates(updates)
+        # Apply dropout: only participating nodes contribute to this round
+        participant_ids = channel.sample_participants(list(range(len(nodes))))
+        updates = [nodes[i].send_local_update() for i in participant_ids]
 
-        # Central agent broadcasts new global parameters to all nodes
-        central.broadcast_params()
+        if updates:
+            central.aggregate_updates(updates)
+            central.broadcast_params()  # broadcast to ALL nodes, not just participants
 
-        # Optionally evaluate global model on a validation set here and track loss curve
+        # Evaluate global model on full graph
+        if central.global_params:
+            eval_model = WetlandGCN(hidden_channels=32)
+            eval_model.load_state_dict(central.global_params)
+            eval_model.eval()
+            with torch.no_grad():
+                out = eval_model(data.x, data.edge_index)
+                mse = F.mse_loss(out, data.y).item()
+            global_loss_curve.append(mse)
 
-    # Return final global loss curve and trained global model (if applicable)
-    return global_loss_curve, None  # Placeholder for returning trained model
+    final_model = WetlandGCN(hidden_channels=32)
+    if central.global_params:
+        final_model.load_state_dict(central.global_params)
+    return global_loss_curve, final_model
 
 
 #################################################################################
@@ -291,11 +335,14 @@ if __name__ == "__main__":
     print(f"Aggregated parameters : {len(central.global_params)}")
     print(f"items                 : {list(central.global_params.keys())}")
 
-    # Now repeat training until the goal node is reached by either node
-    while (node_a.current_loc is not goal_node) and (node_b.current_loc is not goal_node):
-        # Update each node's current location
+    # Repeat training rounds until a node reaches the goal (max 20 rounds)
+    max_rounds = 20
+    for round_num in range(max_rounds):
         node_a.current_loc = node_a.local_data.get("location")
         node_b.current_loc = node_b.local_data.get("location")
+
+        if node_a.current_loc == goal_node or node_b.current_loc == goal_node:
+            break
 
         # Node training
         node_a.train_local(data, radius=3, epochs=10, lr=1e-3)
