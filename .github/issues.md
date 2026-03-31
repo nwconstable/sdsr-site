@@ -55,7 +55,7 @@ def build_local_subgraph(data: Data, node_indices: np.ndarray) -> Data:
 
 ---
 
-## Issue #2 — Implement communication constraints and protocol interruption logger
+## Issue #2 — Implement communication constraints and protocol interruption logger ✓ DONE
 
 **Labels:** `feature` `simulation`
 **File:** `project/src/comms.py`
@@ -107,14 +107,14 @@ class ProtocolInterruptionLogger:
 ```
 
 ### Acceptance criteria
-- [ ] `is_comm_round(step)` returns True iff `step % comm_every == 0`
-- [ ] `sample_participants` drops each drone independently with probability `dropout_p`
-- [ ] `gossip_pairs` returns non-overlapping pairs from the participant list
-- [ ] `record_round` logs a "blackout" when the per-round dropout rate > `baseline_p`
-- [ ] `summary()` returns keys: `total_rounds`, `total_dropouts`, `total_blackouts`, `per_drone`
-- [ ] `save(path)` writes valid JSON containing the full event list
-- [ ] `CommunicationChannel` calls `record_round` automatically inside `sample_participants`
-- [ ] `__main__` block simulates 50 rounds with 4 drones and prints the summary
+- [x] `is_comm_round(step)` returns True iff `step % comm_every == 0`
+- [x] `sample_participants` drops each drone independently with probability `dropout_p`
+- [x] `gossip_pairs` returns non-overlapping pairs from the participant list
+- [x] `record_round` logs a "blackout" when the per-round dropout rate > `baseline_p`
+- [x] `summary()` returns keys: `total_rounds`, `total_dropouts`, `total_blackouts`, `per_drone`
+- [x] `save(path)` writes valid JSON containing the full event list
+- [x] `CommunicationChannel` calls `record_round` automatically inside `sample_participants`
+- [x] `__main__` block simulates 50 rounds with 4 drones and prints the summary
 
 ---
 

@@ -33,6 +33,12 @@ DONE: Drone partitioning (project/src/partition.py)
   - build_local_subgraph     : canonical public subgraph builder (re-indexes nodes 0..N-1)
   - train.py / federated_agent.py now import build_local_subgraph from here
 
+DONE: Communication constraints (project/src/comms.py)
+  - CommunicationChannel     : comm schedule (is_comm_round), per-drone dropout
+                               (sample_participants), gossip pairing (gossip_pairs)
+  - ProtocolInterruptionLogger : dropout/blackout event log, summary(), save(JSON)
+  - train.py / federated_agent.py TYPE_CHECKING guards replaced with live imports
+
 -----------------------------------
 NEXT STEP
 -----------------------------------
@@ -44,46 +50,11 @@ Implement the following files in project/src/ in order:
 -----------------------------------
 
 -----------------------------------
-1. comms.py  —  communication constraints + protocol interruption
+✓ DONE  comms.py  —  CommunicationChannel + ProtocolInterruptionLogger
 -----------------------------------
 
-  NOTE — existing stubs:
-    - train.py and federated_agent.py both import CommunicationChannel under
-      a TYPE_CHECKING guard to avoid NameError at runtime (comms.py not yet
-      present). train.py __main__ uses a _MockChannel stub for gossip smoke
-      tests. Once comms.py exists, these guards become live imports and the
-      _MockChannel stub in train.py __main__ should be replaced with a real
-      CommunicationChannel(comm_every=1, dropout_p=0.0).
-
-  class CommunicationChannel:
-    - __init__(comm_every, dropout_p, baseline_p=None, seed=None)
-        comm_every  : int   - steps between comm rounds
-        dropout_p   : float - per-drone drop probability each round
-        baseline_p  : float - expected baseline dropout rate (defaults to dropout_p)
-                              events above baseline are flagged as blackouts
-    - def is_comm_round(step) -> bool
-        Returns True when step % comm_every == 0
-    - def sample_participants(drone_ids) -> list[int]
-        Draw each drone independently; drop with probability dropout_p
-    - def gossip_pairs(drone_ids) -> list[tuple[int, int]]
-        Randomly pair shuffled participants (unpaired drone is skipped)
-
-  class ProtocolInterruptionLogger:
-    - __init__(baseline_p)
-    - def log(round_num, drone_id, reason: Literal["dropout","blackout"])
-        "blackout" = unexpected dropout beyond baseline rate
-    - def record_round(round_num, participants, all_drone_ids)
-        Infers dropouts, classifies each as dropout vs blackout
-    - def summary() -> dict
-        Returns counts: total_rounds, total_dropouts, total_blackouts, per_drone
-    - def save(path)
-        Saves full event log to a JSON file
-
-  Integrate ProtocolInterruptionLogger into CommunicationChannel so that
-  record_round is called automatically after each sample_participants call.
-
 -----------------------------------
-2. simulator.py  —  spatial grid simulator
+1. simulator.py  —  spatial grid simulator
 -----------------------------------
 
   class SpatialGridSimulator:
@@ -101,7 +72,7 @@ Implement the following files in project/src/ in order:
         Filename: output_dir / f"sim_step_{step:04d}.png"
 
 -----------------------------------
-3. evaluate.py  —  evaluation & plots
+2. evaluate.py  —  evaluation & plots
 -----------------------------------
 
   def compare_convergence(centralized_losses, fedavg_losses, gossip_losses,
@@ -126,7 +97,7 @@ Implement the following files in project/src/ in order:
     - Call eval_greedy_path for each method and print results
 
 -----------------------------------
-4. main.py  —  entry point
+3. main.py  —  entry point
 -----------------------------------
 
 Wire everything together with argparse:
