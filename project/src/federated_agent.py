@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 import uuid
 import random
 import time
@@ -13,12 +13,9 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.utils import subgraph
 
+from comms import CommunicationChannel
 from model import WetlandGCN
 from partition import build_local_subgraph
-
-if TYPE_CHECKING:
-    # comms.py is implemented in Issue #2
-    from comms import CommunicationChannel
 
 #
 # Node Agent Class

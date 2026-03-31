@@ -15,19 +15,15 @@ from __future__ import annotations
 import copy
 import sys
 import time
-from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 
+from comms import CommunicationChannel
 from model import WetlandGCN
 from partition import build_local_subgraph
-
-if TYPE_CHECKING:
-    # Imported only for type-checking; comms.py is implemented in Issue #2.
-    from comms import CommunicationChannel
 
 
 def train_centralized(
@@ -214,18 +210,10 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------
     # train_gossip smoke test
     # ------------------------------------------------------------------
-    # Minimal channel stub so gossip can run without comms.py existing yet.
-    class _MockChannel:
-        def gossip_pairs(self, drone_ids):
-            import random as _random
-            ids = list(drone_ids)
-            _random.shuffle(ids)
-            return [(ids[i], ids[i + 1]) for i in range(0, len(ids) - 1, 2)]
-
     # Split 10-node grid into 2 partitions: left half (cols 0-2) / right half (cols 3-4)
     partitions = [np.array([0, 1, 2, 5, 6, 7]), np.array([3, 4, 8, 9])]
 
-    channel = _MockChannel()
+    channel = CommunicationChannel(comm_every=1, dropout_p=0.0)
     GOSSIP_ROUNDS = 5
 
     g_losses, drone_models = train_gossip(
