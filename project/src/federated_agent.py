@@ -193,10 +193,10 @@ class CentralAgent:
 def train_fedavg(
     data: Data,
     partitions: list[np.array],
-    channel: CommunicationChannel,
+#    channel: CommunicationChannel,
     epochs: int,
     local_steps: int,
-    lr: float = 1e-3,
+    lr_local: float = 1e-3,
 ) -> tuple[list[float], WetlandGCN]:
     """
     data: Full graph data object
@@ -222,13 +222,28 @@ def train_fedavg(
         # Each node trains locally on its partition of the data
         for i, node in enumerate(nodes):
             partition_idx = partitions[i]
-            partition_data = Data(
-                x=data.x[partition_idx],
-                edge_index=subgraph(partition_idx, data.edge_index)[0],
-                y=data.y[partition_idx]
-            )
-            node.train_local(partition_data, epochs=local_steps, lr=lr)
 
+            try:
+                partition_data = Data(
+                    x=data.x[partition_idx],
+                    edge_index=subgraph(partition_idx, data.edge_index)[0],
+                    y=data.y[partition_idx]
+                )
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    print(f"ValueError occurred while training node {node.node_id}: {e}")
+                elif isinstance(e, TypeError):
+                    print(f"TypeError occurred while training node {node.node_id}: {e}")
+                    print(f"Partition indices: {partition_idx}")
+                    print(f"Partition data: {data.x[partition_idx]}")
+                    print(f"Partition labels: {data.y[partition_idx]}")
+                    print(f"Data edge index shape: {data.edge_index.shape}")
+                    print(f"Subgraph Shape: {subgraph(partition_idx, data.edge_index).shape}")
+                    print(f"Subgraph First Element: {subgraph(partition_idx, data.edge_index)[0]}")
+                else:
+                    print(f"Error occurred while training node {node.node_id}: {e}")
+
+            node.train_local(partition_data, epochs=local_steps, lr=lr_local)
         # Central agent aggregates updates from all nodes
         updates = [node.send_local_update() for node in nodes]
         central.aggregate_updates(updates)
@@ -252,10 +267,13 @@ if __name__ == "__main__":
 
     # Build the full graph from wetland data, and the goal node for the pathfinding task
     gdf = load_gdf()
-    data, goal_node = build_pyg_data(gdf, grid_size=40, seed=42)
+    sample_data, goal_node = build_pyg_data(gdf, grid_size=40, seed=42)
 
     print(f"Goal node             : {goal_node}")
 
+    # Initial test block
+    """
+    ############### Commented out for now #####################################################
     # Setup federated environment
     central = CentralAgent()
     node_a = NodeAgent("node_a")
@@ -315,5 +333,20 @@ if __name__ == "__main__":
         print(f"items                 : {list(central.global_params.keys())}")
 
     print(f"Goal node reached!")
+    ############### Commented out for now #####################################################
+    """
+
+    # train_fedavg() test
+    print("Starting FedAvg training test...")
+
+    Results = train_fedavg(
+        sample_data, 
+        partitions=[np.arange(0, 400), np.arange(400, 1600)], 
+#        channel=None, 
+        epochs=5, 
+        local_steps=3
+    )
+
+    print(f"FedAvg training complete. Global loss curve: {Results[0]}")
 
     sys.exit(0)
