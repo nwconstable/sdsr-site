@@ -7,7 +7,7 @@ checklist.
 
 ---
 
-## Issue #1 — Implement drone node partitioning
+## Issue #1 — Implement drone node partitioning ✓ DONE
 
 **Labels:** `feature` `data`
 **File:** `project/src/partition.py`
@@ -44,14 +44,14 @@ def build_local_subgraph(data: Data, node_indices: np.ndarray) -> Data:
 ```
 
 ### Acceptance criteria
-- [ ] `partition_nodes` returns exactly K non-empty arrays
-- [ ] Union of all arrays equals `range(grid_size**2)` (no node is missing or duplicated)
-- [ ] `build_local_subgraph` edge_index contains only edges internal to the partition
-- [ ] Re-indexed node IDs run from 0 to len(node_indices)-1
-- [ ] Works for K in {2, 3, 4, 5} and grid_size in {10, 50, 100}
-- [ ] `__main__` block prints partition sizes and a sample subgraph summary
-- [ ] `train.py` private `_build_local_subgraph` is removed and replaced with an import from `partition.py`
-- [ ] `federated_agent.py` inline subgraph construction is consolidated to use `build_local_subgraph` from `partition.py`
+- [x] `partition_nodes` returns exactly K non-empty arrays
+- [x] Union of all arrays equals `range(grid_size**2)` (no node is missing or duplicated)
+- [x] `build_local_subgraph` edge_index contains only edges internal to the partition
+- [x] Re-indexed node IDs run from 0 to len(node_indices)-1
+- [x] Works for K in {2, 3, 4, 5} and grid_size in {10, 50, 100}
+- [x] `__main__` block prints partition sizes and a sample subgraph summary
+- [x] `train.py` private `_build_local_subgraph` is removed and replaced with an import from `partition.py`
+- [x] `federated_agent.py` inline subgraph construction is consolidated to use `build_local_subgraph` from `partition.py`
 
 ---
 

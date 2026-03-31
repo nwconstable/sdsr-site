@@ -28,6 +28,11 @@ DONE: FedAvg training (project/src/federated_agent.py)
                                (list[float], WetlandGCN)
   - num_threads / time_budget_ms threaded through train_local (same semantics as gossip)
 
+DONE: Drone partitioning (project/src/partition.py)
+  - partition_nodes          : column-wise strip split; returns K non-empty np.ndarray arrays
+  - build_local_subgraph     : canonical public subgraph builder (re-indexes nodes 0..N-1)
+  - train.py / federated_agent.py now import build_local_subgraph from here
+
 -----------------------------------
 NEXT STEP
 -----------------------------------
@@ -35,29 +40,11 @@ NEXT STEP
 Implement the following files in project/src/ in order:
 
 -----------------------------------
-1. partition.py  —  drone partitioning
+✓ DONE  partition.py  —  column-wise strip partitioning + build_local_subgraph
 -----------------------------------
 
-Split the N grid nodes into K spatial partitions (K = 3-5):
-
-  def partition_nodes(grid_size, K, method="grid") -> list[np.ndarray]
-    - "grid" method: divide the 2D grid into K approximately equal rectangular
-      blocks by splitting along one axis (e.g. column-wise strips)
-    - Return a list of K index arrays, one per drone
-    - Each index array gives the global node indices for that drone
-
-  def build_local_subgraph(data, node_indices) -> Data
-    - Re-index nodes locally (0 .. len(node_indices)-1)
-    - Keep x, y, and only edges where BOTH endpoints are in node_indices
-    - Return a new PyG Data object
-    - NOTE: a private _build_local_subgraph already exists in train.py (~line 71).
-      partition.py provides the canonical public version. After partition.py is
-      implemented, update train.py to import build_local_subgraph from partition
-      (remove the private duplicate) and update federated_agent.py inline
-      subgraph construction to use it as well.
-
 -----------------------------------
-2. comms.py  —  communication constraints + protocol interruption
+1. comms.py  —  communication constraints + protocol interruption
 -----------------------------------
 
   NOTE — existing stubs:
@@ -96,7 +83,7 @@ Split the N grid nodes into K spatial partitions (K = 3-5):
   record_round is called automatically after each sample_participants call.
 
 -----------------------------------
-3. simulator.py  —  spatial grid simulator
+2. simulator.py  —  spatial grid simulator
 -----------------------------------
 
   class SpatialGridSimulator:
@@ -114,7 +101,7 @@ Split the N grid nodes into K spatial partitions (K = 3-5):
         Filename: output_dir / f"sim_step_{step:04d}.png"
 
 -----------------------------------
-4. evaluate.py  —  evaluation & plots
+3. evaluate.py  —  evaluation & plots
 -----------------------------------
 
   def compare_convergence(centralized_losses, fedavg_losses, gossip_losses,
@@ -139,7 +126,7 @@ Split the N grid nodes into K spatial partitions (K = 3-5):
     - Call eval_greedy_path for each method and print results
 
 -----------------------------------
-5. main.py  —  entry point
+4. main.py  —  entry point
 -----------------------------------
 
 Wire everything together with argparse:
