@@ -226,7 +226,7 @@ def train_fedavg(
     """
     data           : Full graph data object
     partitions     : List of node index arrays for each partition
-    channel        : CommunicationChannel — governs comm schedule and dropout
+    channel        : CommunicationChannel — governs comm schedule and dropout (yet to be implemented)
     epochs         : Number of global training rounds
     local_steps    : Max gradient steps each node takes locally per round
     lr             : Learning rate for local training
@@ -286,6 +286,7 @@ if __name__ == "__main__":
     # Build the full graph from wetland data, and the goal node for the pathfinding task
     gdf = load_gdf()
     sample_data, goal_node = build_pyg_data(gdf, grid_size=40, seed=42)
+    comms = CommunicationChannel(comm_every=5, dropout_p=0.25, baseline_p=0.20, seed=42)
 
     print(f"Goal node             : {goal_node}")
 
@@ -363,7 +364,7 @@ if __name__ == "__main__":
     Results = train_fedavg(
         sample_data, 
         partitions=[np.arange(0, 400), np.arange(400, 1600)], 
-#        channel=None, 
+        channel=comms, 
         epochs=5, 
         local_steps=3
     )
