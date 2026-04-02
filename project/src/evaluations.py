@@ -156,8 +156,8 @@ def run_full_evaluation(
 ## Example usage in main block
 #--------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    # Check if debug results directory exists
-    debug_dir = Path("../data/DebugResults")
+    # Check if debug results directory exists (need to run this command in same directory as this program)
+    debug_dir = Path("__file__").resolve().parent.parent / "data/DebugResults"
     fedavg_file = debug_dir / "fedavg_results.txt"
     fedavg_mfile = debug_dir / "fedavg_model.pth"
     centralized_file = debug_dir / "centralized_results.txt"
@@ -167,6 +167,8 @@ if __name__ == "__main__":
     if (not debug_dir.exists()):
         print("Creating debug directory for citable results...")
         debug_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        print(f"Checking for files in \"{debug_dir}\"...")
 
     # Load results to debug if they exists, otherwise make them
     if ((fedavg_file.exists()) and (centralized_file.exists()) and 

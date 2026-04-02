@@ -107,7 +107,7 @@ if __name__ == "__main__":
     simulator = SpatialGridSimulator(GRID_SIZE, partitions, data)
 
     # Print the images to a debug directory
-    debug_dir = Path("../data/DebugResults")
+    debug_dir = Path("__file__").resolve().parent.parent / "data/DebugResults"
 
     if not debug_dir.exists():
         print("Creating debug directory for grid simulator results...")
