@@ -192,7 +192,7 @@ if __name__ == "__main__":
         sample_data, goal_node = build_pyg_data(gdf, grid_size=40, seed=42)
         comms = CommunicationChannel(comm_every=5, dropout_p=0.25, baseline_p=0.20, seed=42)
         base_model = WetlandGCN(hidden_channels=64)
-        training_partitions = partition_nodes(grid_size=40, K=5, seed=42)
+        training_partitions = partition_nodes(grid_size=40, K=5)
 
         centralized_results = train_centralized(sample_data, base_model, epochs=5, lr=1e-3)
         gossip_results = train_gossip(sample_data, training_partitions, comms, epochs=5, local_steps=3)
