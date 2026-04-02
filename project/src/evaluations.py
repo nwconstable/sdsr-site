@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 from typing import Union
 import numpy as np
+import torch
 from torch_geometric import data
 from model import WetlandGCN
 from torch_geometric.data import Data
@@ -158,41 +159,51 @@ if __name__ == "__main__":
     # Check if debug results directory exists
     debug_dir = Path("../data/DebugResults")
     fedavg_file = debug_dir / "fedavg_results.txt"
+    fedavg_mfile = debug_dir / "fedavg_model.pth"
     centralized_file = debug_dir / "centralized_results.txt"
     gossip_file = debug_dir / "gossip_results.txt"
+    gossip_mfile = debug_dir / "gossip_model.pth"
 
     if (not debug_dir.exists()):
+        print("Creating debug directory for citable results...")
         debug_dir.mkdir(parents=True, exist_ok=True)
 
     # Load results to debug if they exists, otherwise make them
-    if (fedavg_file.exists()) and (centralized_file.exists()) and (gossip_file.exists()):
+    if ((fedavg_file.exists()) and (centralized_file.exists()) and 
+        (gossip_file.exists()) and (fedavg_mfile.exists()) and 
+        (gossip_mfile.exists())):
+        # All files exist, load results and models to save time for debugging
         print(f"Loading results from \"{debug_dir}\"...")
         centralized_results = np.loadtxt(centralized_file)
-        gossip_results = np.loadtxt(gossip_file)
-        fedavg_results = np.loadtxt(fedavg_file)
+        gossip_results = np.loadtxt(gossip_file), torch.load(gossip_mfile)
+        fedavg_results = np.loadtxt(fedavg_file), torch.load(fedavg_mfile)
     else:
         print(f"Creating Results and saving to \"{debug_dir}\"...")
         from build_graph import build_pyg_data
         from load_data import load_gdf
         from comms import CommunicationChannel
-        from project.src.federated_agent import train_fedavg
-        from project.src.train import train_centralized
-        from project.src.train import train_gossip
+        from federated_agent import train_fedavg
+        from train import train_centralized
+        from train import train_gossip
+        from partition import partition_nodes
 
+        # Test data for the evaluations doesn't exist; so make them here
         gdf = load_gdf()
         sample_data, goal_node = build_pyg_data(gdf, grid_size=40, seed=42)
         comms = CommunicationChannel(comm_every=5, dropout_p=0.25, baseline_p=0.20, seed=42)
         base_model = WetlandGCN(hidden_channels=64)
-        training_partitions = [np.arange(0, 400), np.arange(800, 1600)]
+        training_partitions = partition_nodes(grid_size=40, K=5, seed=42)
 
         centralized_results = train_centralized(sample_data, base_model, epochs=5, lr=1e-3)
         gossip_results = train_gossip(sample_data, training_partitions, comms, epochs=5, local_steps=3)
-        fedavg_results = train_fedavg(sample_data, training_partitions, epochs=5, local_steps=3)
+        fedavg_results = train_fedavg(sample_data, training_partitions, comms, epochs=5, local_steps=3)
 
         # save results to debug directory
         np.savetxt(centralized_file, centralized_results)
-        np.savetxt(gossip_file, gossip_results)
-        np.savetxt(fedavg_file, fedavg_results)
+        np.savetxt(gossip_file, gossip_results[0])
+        torch.save(gossip_results[1], gossip_mfile)
+        np.savetxt(fedavg_file, fedavg_results[0])
+        torch.save(fedavg_results[1], fedavg_mfile)
 
     print("Comparing convergence results...")
     # TBD - Save models to txt file so they can be loaded as well
