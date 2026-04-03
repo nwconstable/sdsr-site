@@ -6,6 +6,7 @@ import torch
 from torch_geometric import data
 from model import WetlandGCN
 from torch_geometric.data import Data
+import torch_geometric.transforms as T
 
 import matplotlib.pyplot as plt
 
@@ -50,24 +51,41 @@ def eval_greedy_path(
     greedy_cost = 0.0
     current = start_node
     visited = {current}
+    data_tensor = data.y
     
+    print(f"~~~~~~~~~~~{type(data_tensor)}~~~~~~~~~~~~")
+
     while len(visited) < min(grid_size, data.num_nodes):
         # Get predictions for unvisited neighbors
         neighbors = [n for n in range(data.num_nodes) if n not in visited]
+
         if not neighbors:
             break
+
         # Select neighbor with lowest predicted cost
-        costs = model(data).detach().numpy()
+        costs = {}
+
+        for n in neighbors:
+            costs[n] = abs(model(data_tensor, n).detach().numpy())
+
         next_node = min(neighbors, key=lambda n: costs[n])
-        greedy_cost += abs(costs[next_node])
+
+        # Update greedy cost
+        greedy_cost += costs[next_node]
+
+        # Mark next_node as current node, and add to visited
         visited.add(next_node)
         current = next_node
     
     # Optimal cost (simplified as mean of all node costs)
-    all_costs = model(data).detach().numpy()
+    all_costs = 0.0
+
+    for v in visited:
+        all_costs += abs(model(data_tensor, v).detach().numpy())
+
     optimal_cost = np.mean(all_costs[:min(grid_size, data.num_nodes)])
     
-    efficiency_ratio = optimal_cost / (greedy_cost + 1e-6)
+    efficiency_ratio = abs((optimal_cost - greedy_cost) / optimal_cost)
     
     return greedy_cost, optimal_cost, efficiency_ratio
 
@@ -156,6 +174,8 @@ def run_full_evaluation(
 ## Example usage in main block
 #--------------------------------------------------------------------------------------
 if __name__ == "__main__":
+    base_model = WetlandGCN(hidden_channels=64)
+
     # Check if debug results directory exists (need to run this command in same directory as this program)
     debug_dir = Path("__file__").resolve().parent.parent / "data/DebugResults"
     fedavg_file = debug_dir / "fedavg_results.txt"
@@ -163,6 +183,7 @@ if __name__ == "__main__":
     centralized_file = debug_dir / "centralized_results.txt"
     gossip_file = debug_dir / "gossip_results.txt"
     gossip_mfile = debug_dir / "gossip_model.pth"
+    sample_mfile = debug_dir / "sample_data.pth"
 
     if (not debug_dir.exists()):
         print("Creating debug directory for citable results...")
@@ -173,12 +194,13 @@ if __name__ == "__main__":
     # Load results to debug if they exists, otherwise make them
     if ((fedavg_file.exists()) and (centralized_file.exists()) and 
         (gossip_file.exists()) and (fedavg_mfile.exists()) and 
-        (gossip_mfile.exists())):
+        (gossip_mfile.exists()) and (sample_mfile.exists())):
         # All files exist, load results and models to save time for debugging
         print(f"Loading results from \"{debug_dir}\"...")
         centralized_results = np.loadtxt(centralized_file)
-        gossip_results = np.loadtxt(gossip_file), torch.load(gossip_mfile)
-        fedavg_results = np.loadtxt(fedavg_file), torch.load(fedavg_mfile)
+        gossip_results = np.loadtxt(gossip_file), torch.load(gossip_mfile, weights_only=False)
+        fedavg_results = np.loadtxt(fedavg_file), torch.load(fedavg_mfile, weights_only=False)
+        sample_data = torch.load(sample_mfile, weights_only=False)
     else:
         print(f"Creating Results and saving to \"{debug_dir}\"...")
         from build_graph import build_pyg_data
@@ -193,7 +215,6 @@ if __name__ == "__main__":
         gdf = load_gdf()
         sample_data, goal_node = build_pyg_data(gdf, grid_size=40, seed=42)
         comms = CommunicationChannel(comm_every=5, dropout_p=0.25, baseline_p=0.20, seed=42)
-        base_model = WetlandGCN(hidden_channels=64)
         training_partitions = partition_nodes(grid_size=40, K=5)
 
         centralized_results = train_centralized(sample_data, base_model, epochs=5, lr=1e-3)
@@ -206,9 +227,20 @@ if __name__ == "__main__":
         torch.save(gossip_results[1], gossip_mfile)
         np.savetxt(fedavg_file, fedavg_results[0])
         torch.save(fedavg_results[1], fedavg_mfile)
+        torch.save(sample_data, sample_mfile)
 
+    # Now test the full evaluation tool
     print("Comparing convergence results...")
-    # TBD - Save models to txt file so they can be loaded as well
+    run_full_evaluation(
+        data=sample_data,
+        centralized_model=base_model,
+        fedavg_model=fedavg_results[1],
+        gossip_models=gossip_results[1],
+        centralized_losses=centralized_results,
+        fedavg_losses=fedavg_results[0],
+        gossip_losses=gossip_results[0],
+        output_dir=debug_dir,
+    )
     print("Done")
 
     sys.exit(0)
