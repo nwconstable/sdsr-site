@@ -100,7 +100,10 @@ def run_full_evaluation(
 ) -> None:
     """Print MSE table, save convergence plot, print greedy path results."""
     output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check to see if we already have the directory, if not create it
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
     
     # Print MSE table
     print("\n" + "="*60)
