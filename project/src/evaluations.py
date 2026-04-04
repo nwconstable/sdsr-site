@@ -51,9 +51,7 @@ def eval_greedy_path(
     greedy_cost = 0.0
     current = start_node
     visited = {current}
-    data_tensor = data.y
-    
-    print(f"~~~~~~~~~~~{type(data_tensor)}~~~~~~~~~~~~")
+    data_targets = data.y
 
     while len(visited) < min(grid_size, data.num_nodes):
         # Get predictions for unvisited neighbors
@@ -66,7 +64,8 @@ def eval_greedy_path(
         costs = {}
 
         for n in neighbors:
-            costs[n] = abs(model(data_tensor, n).detach().numpy())
+            print(f"{n}~~~~~~~~~~~{type(data)}~~~~~~~~~~~~{data_targets.shape}~~~~~~~~~~~~")
+            costs[n] = abs(model(x=data_targets, edge_index=n).detach().numpy())
 
         next_node = min(neighbors, key=lambda n: costs[n])
 
@@ -81,7 +80,7 @@ def eval_greedy_path(
     all_costs = 0.0
 
     for v in visited:
-        all_costs += abs(model(data_tensor, v).detach().numpy())
+        all_costs += abs(model(x=data_targets, edge_index=v).detach().numpy())
 
     optimal_cost = np.mean(all_costs[:min(grid_size, data.num_nodes)])
     
