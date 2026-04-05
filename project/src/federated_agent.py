@@ -270,8 +270,10 @@ def train_fedavg(
             global_loss_curve.append(mse)
 
     final_model = WetlandGCN(hidden_channels=32)
+
     if central.global_params:
         final_model.load_state_dict(central.global_params)
+
     return global_loss_curve, final_model
 
 

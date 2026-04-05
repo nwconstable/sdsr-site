@@ -13,6 +13,7 @@ from grid_sim import SpatialGridSimulator
 from train import train_centralized, train_gossip
 from evaluations import run_full_evaluation
 from federated_agent import train_fedavg
+from model import WetlandGCN
 
 def main():
     parser = argparse.ArgumentParser(description="Run the SDSR experiment.")
@@ -26,6 +27,8 @@ def main():
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate.')
     parser.add_argument('--seed', type=int, default=42, help='Random seed.')
     parser.add_argument('--output-dir', type=str, default='project/results', help='Output directory.')
+    parser.add_argument('--num-threads', type=int, default=4, help="Number of threads for Gossip Training.")
+    parser.add_argument('--time-budget', type=int, default=None, help="Time (ms) allowed for gossip training")
 
     args = parser.parse_args()
 
@@ -37,36 +40,34 @@ def main():
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Execution order
-    # 1. Load GeoDataFrame
+    # Load Data
     gdf_data = gdf()
 
-    # 2. build_pyg_data -> data
-    data = build_pyg_data(gdf_data)
+    # Create training objects
+    data, goal = build_pyg_data(gdf_data, grid_size=args.grid_size, seed=args.seed)
+    channel = CommunicationChannel(comm_every=args.comm_every, dropout_p=args.dropout_p,
+                                    baseline_p=args.baseline_p, seed=args.seed)
+    partitions = partition_nodes(grid_size=args.grid_size, K=args.K)
 
-    # 3. partition_nodes -> partitions
-    partitions = partition_nodes(data, args.K)
+    # Create the models and losses
+    base_model = WetlandGCN()
+    central_losses = train_centralized(data, base_model, args.epochs, args.lr)
+    gossip_losses, gossip_models = train_gossip(data, partitions, channel, args.epochs,
+                                                 args.local_steps, args.lr,
+                                                 args.num_threads, args.time_budget)
+    fedavg_losses, fedavg_model = train_fedavg(data, partitions, channel, args.epochs,
+                                                args.local_steps, args.lr, 
+                                                args.num_threads, args.time_budget)
 
-    # 4. Construct CommunicationChannel
-    channel = CommunicationChannel(partitions, args.comm_every, args.dropout_p, args.baseline_p)
-
-    # 5. Construct SpatialGridSimulator
+    # Create Simulator
     simulator = SpatialGridSimulator(data, partitions, channel, args.grid_size)
 
-    # 6. train_centralized
-    train_centralized(simulator, args.epochs, args.lr)
-
-    # 7. train_fedavg
-    train_fedavg(simulator, args.epochs, args.local_steps, args.lr)
-
-    # 8. train_gossip
-    train_gossip(simulator, args.epochs, args.local_steps, args.lr)
-
-    # 9. run_full_evaluation
-    run_full_evaluation(simulator)
-
-    # 10. channel.logger.save(output_dir/interruptions.json)
+    # Evaluate and print results
     channel.logger.save(os.path.join(args.output_dir, 'interruptions.json'))
+
+    run_full_evaluation(data, simulator.centralized_model, simulator.fedavg_model,
+                         simulator.gossip_models, simulator.centralized_losses,
+                         simulator.fedavg_losses, simulator.gossip_losses)
 
 if __name__ == '__main__':
     main()
