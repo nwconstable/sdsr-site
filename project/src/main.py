@@ -65,9 +65,8 @@ def main():
     # Evaluate and print results
     channel.logger.save(os.path.join(args.output_dir, 'interruptions.json'))
 
-    run_full_evaluation(data, simulator.centralized_model, simulator.fedavg_model,
-                         simulator.gossip_models, simulator.centralized_losses,
-                         simulator.fedavg_losses, simulator.gossip_losses)
+    run_full_evaluation(data, base_model, fedavg_model, gossip_models, central_losses,
+                         fedavg_losses, gossip_losses)
 
 if __name__ == '__main__':
     main()
