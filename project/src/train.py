@@ -26,6 +26,36 @@ from model import WetlandGCN
 from partition import build_local_subgraph
 
 
+def _clone_state_dict(state_dict: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    return {key: value.detach().clone() for key, value in state_dict.items()}
+
+
+def _average_state_dicts(
+    state_dicts: list[dict[str, torch.Tensor]],
+) -> dict[str, torch.Tensor]:
+    avg_state: dict[str, torch.Tensor] = {}
+    for key in state_dicts[0]:
+        acc = state_dicts[0][key].detach().float().clone()
+        for state_dict in state_dicts[1:]:
+            acc += state_dict[key].detach().float()
+        avg_state[key] = acc / len(state_dicts)
+    return avg_state
+
+
+def _evaluate_state_dict(
+    data: Data,
+    state_dict: dict[str, torch.Tensor],
+    hidden_channels: int,
+) -> float:
+    eval_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    eval_model.load_state_dict(state_dict)
+    eval_model.eval()
+    with torch.no_grad():
+        return F.mse_loss(eval_model(data.x, data.edge_index), data.y).item()
+
+
 def train_centralized(
     data: Data,
     model: WetlandGCN,
@@ -73,24 +103,23 @@ def train_gossip(
     lr: float = 1e-3,
     num_threads: int = 4,
     time_budget_ms: int | None = None,
+    initial_state_dict: dict[str, torch.Tensor] | None = None,
+    hidden_channels: int = 64,
 ) -> tuple[list[float], list[WetlandGCN]]:
     """Fully decentralised gossip training.
 
-    Each epoch IS one communication round:
-      1. Every drone trains locally on its partition for *local_steps* steps
-         (or until *time_budget_ms* is exhausted, whichever comes first).
-      2. ``channel.gossip_pairs`` returns random pairs of drones.
-      3. Each pair averages their model weights (no central server).
-      4. The global evaluation model is the element-wise average of all
-         drone state_dicts, evaluated on the full graph.
+     Each epoch performs local training. On scheduled communication epochs,
+     ``channel.gossip_pairs`` returns random pairs of drones whose weights are
+     averaged with no central server. The evaluation model is always the
+     element-wise average of all drone state_dicts, evaluated on the full graph.
 
     Parameters
     ----------
     data           : full PyG Data object (x, edge_index, y)
     partitions     : list of K global node-index arrays (one per drone)
     channel        : CommunicationChannel — governs comm schedule and dropout
-    epochs         : number of communication rounds
-    local_steps    : max gradient steps each drone takes before gossip exchange
+    epochs         : number of local-training epochs
+    local_steps    : max gradient steps each drone takes before a possible gossip exchange
     lr             : Adam learning rate
     num_threads    : PyTorch CPU thread count per drone.  Default 4 reflects a
                      typical ARM Cortex-A72 / Jetson Nano class device (4 cores).
@@ -107,7 +136,18 @@ def train_gossip(
     K = len(partitions)
     drone_ids = list(range(K))
 
-    drone_models: list[WetlandGCN] = [WetlandGCN() for _ in range(K)]
+    if initial_state_dict is None:
+        template_model = WetlandGCN(
+            in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+        )
+        initial_state_dict = _clone_state_dict(template_model.state_dict())
+
+    drone_models: list[WetlandGCN] = [
+        WetlandGCN(in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels)
+        for _ in range(K)
+    ]
+    for model in drone_models:
+        model.load_state_dict(_clone_state_dict(initial_state_dict))
     optimizers = [torch.optim.Adam(m.parameters(), lr=lr) for m in drone_models]
     local_subgraphs = [build_local_subgraph(data, idx) for idx in partitions]
 
@@ -134,29 +174,22 @@ def train_gossip(
             torch.set_num_threads(_prev_threads)
 
         # 2. Gossip exchange — pairs determined by the channel
-        pairs = channel.gossip_pairs(drone_ids)
-        for i, j in pairs:
-            sd_i = {k: v.clone() for k, v in drone_models[i].state_dict().items()}
-            sd_j = {k: v.clone() for k, v in drone_models[j].state_dict().items()}
-            avg_sd = {k: (sd_i[k] + sd_j[k]) / 2.0 for k in sd_i}
-            drone_models[i].load_state_dict(avg_sd)
-            drone_models[j].load_state_dict(copy.deepcopy(avg_sd))
-            # Reset optimizers so stale moment estimates don't pollute new weights
-            optimizers[i] = torch.optim.Adam(drone_models[i].parameters(), lr=lr)
-            optimizers[j] = torch.optim.Adam(drone_models[j].parameters(), lr=lr)
+        if channel.is_comm_round(comm_round):
+            pairs = channel.gossip_pairs(drone_ids)
+            for i, j in pairs:
+                sd_i = _clone_state_dict(drone_models[i].state_dict())
+                sd_j = _clone_state_dict(drone_models[j].state_dict())
+                avg_sd = {k: (sd_i[k] + sd_j[k]) / 2.0 for k in sd_i}
+                drone_models[i].load_state_dict(avg_sd)
+                drone_models[j].load_state_dict(copy.deepcopy(avg_sd))
+                # Reset optimizers so stale moment estimates don't pollute new weights
+                optimizers[i] = torch.optim.Adam(drone_models[i].parameters(), lr=lr)
+                optimizers[j] = torch.optim.Adam(drone_models[j].parameters(), lr=lr)
 
-        # 3. Evaluate: average all drone state_dicts, run on full graph
-        keys = drone_models[0].state_dict().keys()
-        avg_global = {
-            k: sum(m.state_dict()[k].float() for m in drone_models) / K
-            for k in keys
-        }
-        eval_model = WetlandGCN()
-        eval_model.load_state_dict(avg_global)
-        eval_model.eval()
-        with torch.no_grad():
-            mse = F.mse_loss(eval_model(data.x, data.edge_index), data.y).item()
-        losses.append(mse)
+        avg_global = _average_state_dicts(
+            [model.state_dict() for model in drone_models]
+        )
+        losses.append(_evaluate_state_dict(data, avg_global, hidden_channels))
 
     return losses, drone_models
 
@@ -194,7 +227,7 @@ if __name__ == "__main__":
 
     data = Data(x=wetland, edge_index=edge_index, y=targets)
 
-    model = WetlandGCN(hidden_channels=64)
+    model = WetlandGCN(in_channels=data.x.shape[1], hidden_channels=64)
     initial_loss = F.mse_loss(model(data.x, data.edge_index), data.y).item()
 
     EPOCHS = 10

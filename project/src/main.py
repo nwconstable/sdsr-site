@@ -1,10 +1,12 @@
 import argparse
+import copy
+import json
 import os
 import random
 import numpy as np
 import torch
 import sys
-from load_data import gdf
+from load_data import load_gdf
 
 from build_graph import build_pyg_data
 from partition import partition_nodes
@@ -41,32 +43,76 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
 
     # Load Data
-    gdf_data = gdf()
+    gdf_data = load_gdf()
 
     # Create training objects
     data, goal = build_pyg_data(gdf_data, grid_size=args.grid_size, seed=args.seed)
-    channel = CommunicationChannel(comm_every=args.comm_every, dropout_p=args.dropout_p,
-                                    baseline_p=args.baseline_p, seed=args.seed)
     partitions = partition_nodes(grid_size=args.grid_size, K=args.K)
+    gossip_channel = CommunicationChannel(
+        comm_every=args.comm_every,
+        dropout_p=args.dropout_p,
+        baseline_p=args.baseline_p,
+        seed=args.seed,
+    )
+    fedavg_channel = CommunicationChannel(
+        comm_every=args.comm_every,
+        dropout_p=args.dropout_p,
+        baseline_p=args.baseline_p,
+        seed=args.seed,
+    )
 
     # Create the models and losses
-    base_model = WetlandGCN()
+    hidden_channels = 64
+    initial_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    initial_state_dict = {
+        key: value.detach().clone() for key, value in initial_model.state_dict().items()
+    }
+    base_model = copy.deepcopy(initial_model)
     central_losses = train_centralized(data, base_model, args.epochs, args.lr)
-    gossip_losses, gossip_models = train_gossip(data, partitions, channel, args.epochs,
-                                                 args.local_steps, args.lr,
-                                                 args.num_threads, args.time_budget)
-    fedavg_losses, fedavg_model = train_fedavg(data, partitions, channel, args.epochs,
-                                                args.local_steps, args.lr, 
-                                                args.num_threads, args.time_budget)
+    gossip_losses, gossip_models = train_gossip(
+        data,
+        partitions,
+        gossip_channel,
+        args.epochs,
+        args.local_steps,
+        args.lr,
+        args.num_threads,
+        args.time_budget,
+        initial_state_dict=initial_state_dict,
+        hidden_channels=hidden_channels,
+    )
+    fedavg_losses, fedavg_model = train_fedavg(
+        data,
+        partitions,
+        fedavg_channel,
+        args.epochs,
+        args.local_steps,
+        args.lr,
+        args.num_threads,
+        args.time_budget,
+        initial_state_dict=initial_state_dict,
+        hidden_channels=hidden_channels,
+    )
 
     # Create Simulator
-    simulator = SpatialGridSimulator(data, partitions, channel, args.grid_size)
+    simulator = SpatialGridSimulator(args.grid_size, partitions, data)
 
     # Evaluate and print results
-    channel.logger.save(os.path.join(args.output_dir, 'interruptions.json'))
+    interruptions_path = os.path.join(args.output_dir, 'interruptions.json')
+    with open(interruptions_path, 'w', encoding='utf-8') as fh:
+        json.dump(
+            {
+                'gossip': gossip_channel.logger.payload(),
+                'fedavg': fedavg_channel.logger.payload(),
+            },
+            fh,
+            indent=2,
+        )
 
     run_full_evaluation(data, base_model, fedavg_model, gossip_models, central_losses,
-                         fedavg_losses, gossip_losses)
+                         fedavg_losses, gossip_losses, output_dir=args.output_dir)
 
 if __name__ == '__main__':
     main()

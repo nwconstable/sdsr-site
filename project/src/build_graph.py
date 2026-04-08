@@ -10,7 +10,7 @@ Pipeline
 2. Assign wetland_presence node features (1 if cell intersects a wetland polygon)
 3. Build 4-neighbor edge_index (up / down / left / right)
 4. Compute Dijkstra shortest-path distance from every node to a random goal
-5. Return a PyG Data object  (x, edge_index, y, pos)
+5. Return a PyG Data object with goal-conditioned node features
 """
 
 from __future__ import annotations
@@ -201,6 +201,8 @@ def build_pyg_data(
     Returns
     -------
     data      : PyG Data with fields: x, edge_index, y, pos
+                where x contains goal-conditioned node features:
+                [wetland_presence, pos_x, pos_y, goal_x, goal_y, delta_x, delta_y]
     goal_node : the goal node index that was used
     """
     print(f"Building {grid_size}x{grid_size} grid graph ({grid_size**2} nodes)...")
@@ -233,12 +235,25 @@ def build_pyg_data(
         np.stack([(cols + 0.5) / grid_size, (rows + 0.5) / grid_size], axis=1),
         dtype=torch.float,
     )
+    goal_pos = pos[goal_node]
+    goal_features = goal_pos.repeat(len(cell_polys), 1)
+    delta_features = goal_features - pos
+    x = torch.cat(
+        [
+            torch.tensor(wetland_presence, dtype=torch.float).unsqueeze(1),
+            pos,
+            goal_features,
+            delta_features,
+        ],
+        dim=1,
+    )
 
     data = Data(
-        x=torch.tensor(wetland_presence, dtype=torch.float).unsqueeze(1),  # (N, 1)
+        x=x,                                                               # (N, 7)
         edge_index=edge_index,                                             # (2, E)
         y=torch.tensor(labels, dtype=torch.float).unsqueeze(1),            # (N, 1)
         pos=pos,                                                           # (N, 2)
+        goal_pos=goal_pos.clone(),
         grid_size=grid_size,
         goal_node=goal_node,
     )

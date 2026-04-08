@@ -104,7 +104,11 @@ class ProtocolInterruptionLogger:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as fh:
-            json.dump({"summary": self.summary(), "events": self._events}, fh, indent=2)
+            json.dump(self.payload(), fh, indent=2)
+
+    def payload(self) -> dict:
+        """Return the serializable logger payload used for JSON export."""
+        return {"summary": self.summary(), "events": list(self._events)}
 
 
 class CommunicationChannel:
