@@ -121,7 +121,10 @@ class SpatialGridSimulator:
         n_nodes = min(self.grid_size * self.grid_size, self.data.x.shape[0])
         for node in range(n_nodes):
             r, c = divmod(node, self.grid_size)
-            grid_data[r, c] = self.data.x[node].item()
+            if self.data.x.dim() == 1:
+                grid_data[r, c] = self.data.x[node].item()
+            else:
+                grid_data[r, c] = self.data.x[node, 0].item()
 
         fig, ax = plt.subplots(figsize=(6, 6))
         im = ax.imshow(grid_data, cmap="Blues", origin="upper")

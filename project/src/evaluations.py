@@ -37,17 +37,28 @@ def _rollout_greedy_path(
     start_node: int,
     max_steps: int,
 ) -> dict[str, Any]:
-    ei = data.edge_index.detach().cpu().numpy()
-    adj: dict[int, list[int]] = {i: [] for i in range(data.num_nodes)}
-    for src, dst in zip(ei[0], ei[1]):
-        adj[int(src)].append(int(dst))
+    adj = getattr(data, "_eval_adj", None)
+    if adj is None:
+        ei = data.edge_index.detach().cpu().numpy()
+        adj = {i: [] for i in range(data.num_nodes)}
+        for src, dst in zip(ei[0], ei[1]):
+            adj[int(src)].append(int(dst))
+        setattr(data, "_eval_adj", adj)
 
     goal_node = int(getattr(data, "goal_node", int(data.y.argmin().item())))
 
     model.eval()
-    with torch.no_grad():
-        pred = model(data.x, data.edge_index).squeeze(-1)
+    pred_cache = getattr(model, "_eval_pred_cache", None)
+    data_key = id(data)
+    if pred_cache is None:
+        pred_cache = {}
+        setattr(model, "_eval_pred_cache", pred_cache)
 
+    pred = pred_cache.get(data_key)
+    if pred is None:
+        with torch.no_grad():
+            pred = model(data.x, data.edge_index).squeeze(-1).detach()
+        pred_cache[data_key] = pred
     current = start_node
     visited: set[int] = {current}
     greedy_cost = 0.0
