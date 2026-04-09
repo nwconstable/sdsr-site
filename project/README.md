@@ -65,6 +65,11 @@ python main.py \
 | `--num-threads` | int | 4 | CPU thread cap per drone during local training |
 | `--time-budget` | int | None | Wall-clock ms budget per drone per round (None = unconstrained) |
 
+`main.py` validates CLI argument ranges before starting and emits six stage
+status updates so long experiment runs are easier to monitor. Re-running with
+the same `--seed` on the same environment is intended to reproduce the same
+graph construction, communication events, and reported metrics.
+
 ---
 
 ### Module Inventory

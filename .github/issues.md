@@ -328,7 +328,7 @@ def run_full_evaluation(
 
 ---
 
-## Issue #8 — Implement main entry point
+## Issue #8 — Implement main entry point ✓ DONE
 
 **Labels:** `feature` `integration`
 **File:** `project/src/main.py`
@@ -368,12 +368,12 @@ correctly.
 10. Save interruption logs under the selected output directory
 
 ### Acceptance criteria
-- [ ] `python project/src/main.py --help` shows all expected arguments with documented defaults
-- [ ] Running the CLI produces training output for all three methods
-- [ ] All pipeline steps execute without import or runtime errors with default arguments
-- [ ] Results directory contains convergence plot and interruption log JSON
-- [ ] The run is deterministic when a seed is provided
-- [ ] Program exits with code 0 on success
+- [x] `python project/src/main.py --help` shows all expected arguments with documented defaults
+- [x] Running the CLI produces training output for all three methods
+- [x] All pipeline steps execute without import or runtime errors with default arguments
+- [x] Results directory contains convergence plot and interruption log JSON
+- [x] The run is deterministic when a seed is provided
+- [x] Program exits with code 0 on success
 
 ---
 
