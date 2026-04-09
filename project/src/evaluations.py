@@ -146,7 +146,7 @@ def eval_greedy_path(
         data,
         model,
         start_node=start_node,
-        max_steps=max(data.num_nodes, grid_size * 4),
+        max_steps=data.num_nodes - 1,  # worst case: visit all other nodes
     )
     return result["greedy_cost"], result["optimal_cost"], result["efficiency"]
 
@@ -169,7 +169,7 @@ def evaluate_greedy_paths(
             data,
             model,
             start_node=int(start_node),
-            max_steps=max(data.num_nodes, grid_size * 4),
+            max_steps=data.num_nodes - 1,  # worst case: visit all other nodes
         )
         for start_node in start_nodes
     ]
