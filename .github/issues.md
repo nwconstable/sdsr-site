@@ -626,3 +626,137 @@ work does not drift back toward theory-only or under-verified changes.
 - [x] The agent reminds future work to update `project/README.md` and `.github/issues.md`
 - [x] The agent captures the fairness and evaluation lessons learned from the recent investigation
 - [x] The agent includes VVUQ guidance for verification, validation, and uncertainty quantification
+
+---
+
+## Issue #17 — Add issue-intake custom agent ✓ DONE
+
+**Labels:** `feature` `workflow` `documentation`
+**File:** `.github/agents/sdsr-issue-intake.agent.md`
+**Depends on:** `.github/copilot.instructions.md`, `.github/issues.md`
+
+### Context
+The repository has a strong issue-writing format, but vague user requests still
+need to be translated into concrete backlog entries after inspecting the code,
+existing issues, and project instructions. That triage step is distinct from
+the scientific workflow agent: it should focus on intake, deduplication, and
+turning fuzzy requests into implementation-ready issue entries.
+
+The custom agent should review current context before drafting, avoid duplicate
+issues when work is already tracked, and write new issues in the repository's
+canonical format when a fresh task is warranted.
+
+### Acceptance criteria
+- [x] A user-invocable custom agent exists under `.github/agents/`
+- [x] The agent description mentions vague requests, issue drafting, repo context, and `.github/issues.md`
+- [x] The agent requires reading `.github/copilot.instructions.md` and `.github/issues.md` before drafting
+- [x] The agent explicitly handles duplicate or overlapping issues instead of blindly appending new ones
+- [x] The agent instructs itself to write actionable acceptance criteria in the repository's issue format
+
+---
+
+## Issue #18 — Add persistent drone-failure fault tolerance for FedAvg and gossip
+
+**Labels:** `feature` `training` `evaluation`
+**Files:** `project/src/train.py`, `project/src/federated_agent.py`, `project/src/main.py`, `project/src/evaluations.py`, `project/README.md`
+**Depends on:** #2, #5, #6, #7, #8, #14
+
+### Context
+The repository already simulates **communication dropout** via `dropout_p` in
+`CommunicationChannel`, but that is a transient per-round failure mode: the
+drone misses a communication event and may participate again later. The user
+now wants a separate experiment for **persistent drone failure**: a drone can
+drop out entirely mid-run, stop training and communicating for the remainder of
+the experiment, and be treated as permanently out of action.
+
+This should apply to the decentralized methods only (`train_fedavg` in
+`federated_agent.py` and `train_gossip` in `train.py`). Centralized training
+remains the reference baseline and should not simulate per-drone failure.
+
+Smallest reasonable assumption for this issue: introduce a per-round failure
+rate applied independently to each currently active drone. Once a drone fails,
+it remains inactive for the rest of the run and should no longer contribute to
+local training, communication, or decentralized model aggregation/evaluation.
+
+This issue overlaps conceptually with Issue #2, but it is not mergeable with
+the existing communication-dropout feature because the state transition is
+persistent and changes the training population rather than a single comm round.
+
+### Required behavior
+- Add a new CLI/configurable setting in `main.py` for persistent drone failure,
+    with a default of `0.0` so existing runs remain unchanged when the feature is
+    disabled. Use a name that is clearly distinct from communication dropout,
+    such as `--drone-failure-rate`.
+- Extend `train_fedavg` and `train_gossip` so failed drones are removed from
+    future local-training and communication participation for the remainder of
+    the run.
+- Define evaluation behavior for failed drones explicitly. The simplest
+    defensible behavior is that inactive drones no longer count toward the active
+    decentralized model pool after failure.
+- Ensure the training loops do not crash if some drones fail early, and handle
+    the edge case where all decentralized drones fail before the final epoch.
+- Report persistent-failure metrics separately from communication-dropout
+    metrics in the console output and structured output artifacts.
+- Update `project/README.md` to document the new failure mode, CLI argument,
+    and how it differs from `dropout_p` communication dropout.
+
+### Acceptance criteria
+- [ ] `main.py` accepts a persistent drone-failure rate argument with default `0.0`, and argument validation distinguishes it from communication dropout
+- [ ] With persistent failure disabled, FedAvg and gossip retain their prior behavior and still run successfully
+- [ ] In both `train_fedavg` and `train_gossip`, a failed drone performs no further local training and is never selected for later communication rounds
+- [ ] Decentralized evaluation handles permanent failures without crashing, including the case where all drones have failed
+- [ ] Console output reports persistent-failure metrics per method, such as total failed drones and active drones remaining
+- [ ] Output artifacts include a structured permanent-failure summary that is separate from, or clearly nested apart from, the existing communication interruption log
+- [ ] A deterministic smoke test or seeded run demonstrates at least one permanent drone failure and confirms the run still completes
+- [ ] `project/README.md` explains the new setting and explicitly distinguishes permanent drone failure from transient communication dropout
+
+---
+
+## Issue #19 — Fix malformed output-directory rooting in `main.py`
+
+**Labels:** `bug` `integration` `documentation`
+**Files:** `project/src/main.py`, `project/README.md`
+**Depends on:** #8, #10
+
+### Context
+The current CLI output-directory handling in `main.py` is rooted against the
+current working directory via `Path.cwd()`. That causes malformed output paths
+when the command is launched from `project/src/`: the default `--output-dir`
+value of `project/results` resolves to `sdsr-site/project/src/project/results`
+instead of the intended base directory `sdsr-site/project/results`.
+
+The user requirement is stricter than a generic relative-path fix. The base
+output root should always be the repository's canonical results directory:
+`sdsr-site/project/results/`. Any user-specified output target should be
+treated as a folder name or nested subpath **under that base root**, not as an
+arbitrary filesystem path. If the user provides a new folder name, the CLI
+should create the missing directories automatically.
+
+This overlaps with Issue #10 only in that both concern `main.py` integration,
+but it is not mergeable into the earlier completed issue because the bug is a
+newly identified path-resolution defect with tighter CLI semantics.
+
+### Fix
+- Replace `Path.cwd()`-based output resolution in `main.py` with a resolver
+    rooted at the repository's canonical results base, derived from the source
+    file location.
+- Treat the `--output-dir` value as a folder name or nested relative path under
+    `project/results/`, for example:
+    - default behavior writes to `sdsr-site/project/results`
+    - `--output-dir issue8_run1` writes to `sdsr-site/project/results/issue8_run1`
+    - `--output-dir experiments/faults/run_a` writes to
+        `sdsr-site/project/results/experiments/faults/run_a`
+- Prevent path resolution from escaping the `project/results/` base via
+    absolute paths or upward traversal.
+- Keep downstream evaluation and log-writing code unchanged except for using
+    the corrected resolved path.
+- Update `project/README.md` so the CLI documentation matches the rooted output
+    behavior.
+
+### Acceptance criteria
+- [ ] Default CLI output writes to `sdsr-site/project/results`, not `sdsr-site/project/src/project/results`
+- [ ] A user-specified folder name such as `--output-dir test_run` resolves to `sdsr-site/project/results/test_run`
+- [ ] A user-specified nested path such as `--output-dir experiments/test_run` resolves under `sdsr-site/project/results/experiments/test_run`
+- [ ] Missing directories for the requested output target are created automatically
+- [ ] Path resolution cannot escape the `sdsr-site/project/results` base
+- [ ] `project/README.md` documents that `--output-dir` is rooted under `project/results/`
