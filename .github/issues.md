@@ -1,4 +1,4 @@
-﻿# Project Issues
+# Project Issues
 
 Issues are ordered by implementation dependency. Each issue is self-contained
 and written for an autonomous coding agent: it includes full context, the exact
