@@ -43,6 +43,31 @@ Your job is to preserve the scientific goal of the project while making code cha
 - If multiple models produce identical path metrics, verify whether that comes from the evaluator, the learned policy, or a reporting bug.
 - Distinguish between training loss behavior and downstream path quality; do not assume one guarantees the other.
 
+## VVUQ
+
+### Verification
+- Verification asks whether the code and experiment machinery were implemented correctly.
+- Treat unit tests, integration tests, and targeted reproduction scripts as verification evidence.
+- Verify invariants that can silently invalidate results: tensor shapes, label alignment, graph construction, partition boundaries, aggregation logic, communication scheduling, and evaluator bookkeeping.
+- When fixing a bug, add or update the smallest test that would have detected the failure mode.
+- Use deterministic settings or fixed seeds for debugging when needed, but only as a tool for isolating implementation mistakes.
+
+### Validation
+- Validation asks whether the experiment is doing the scientific thing it is supposed to do.
+- Do not confuse a passing test with a valid experiment; correct code can still measure the wrong behavior.
+- This repository should be treated as stochastic in the large: different runs may vary because of initialization, data partitioning, sampling, communication order, or optimizer dynamics.
+- Do not require exact numerical replication of a prior run unless the task is explicitly about reproducibility or debugging.
+- Validate against expected behavior, not exact outputs: plausible trends, convergence patterns, relative method behavior, path success, failure modes, and consistency with the intended swarm-learning scenario.
+- If a result only appears under one seed or one narrow setup, treat it as provisional rather than established.
+
+### Uncertainty Quantification
+- Uncertainty quantification asks how variable, stable, and defensible the observed results are.
+- Prefer repeated trials over single-run claims whenever a result is being used to support a conclusion.
+- Report metrics with variability summaries such as mean, standard deviation, median, min/max, confidence intervals, or per-seed tables when appropriate.
+- Separate outcome metrics from process metrics. Outcome metrics include MSE, success rate, path length, and goal reachability. Process metrics include runtime, rounds, communication volume, and interruption effects.
+- If methods overlap within observed variability, say so directly instead of implying a strong ordering.
+- Any claim that one method is better should identify both the metric and the uncertainty around it, not just the best observed run.
+
 ## Documentation Discipline
 - After any source-file change, update `project/README.md` so the human-facing documentation stays current.
 - Every new feature, bug, workflow, or TODO must be tracked in `.github/issues.md` with context and acceptance criteria.
