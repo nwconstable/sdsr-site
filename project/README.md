@@ -4,7 +4,7 @@
 ### Purpose
 Train a network of simulated edge devices (drones) using three strategies — centralized, FedAvg, and gossip — then empirically compare them on resource dimensions such as network connectivity and compute.
 
-The graph-learning target is goal-conditioned shortest-path regression: every node predicts its Dijkstra distance to a selected goal node using wetland occupancy, node position, and goal-relative features.
+The graph-learning target is goal-conditioned shortest-path regression: every node predicts its Dijkstra distance to a selected goal node using fractional wetland coverage, node position, and goal-relative features.
 
 ---
 
@@ -124,7 +124,9 @@ train_gossip(data, partitions, channel, epochs=50, local_steps=20,
 
 ### Modeling Notes
 
-- `data.x` now contains 7 features per node: wetland presence, normalized `(x, y)` position, normalized goal `(x, y)`, and goal-relative deltas.
+- `data.x` now contains 7 features per node: fractional wetland coverage, normalized `(x, y)` position, normalized goal `(x, y)`, and goal-relative deltas.
+- Wetland coverage is computed per grid cell as the clipped union area of intersecting wetland polygons divided by the cell area, so the first feature channel lies in `[0, 1]` instead of being binary.
+- Dijkstra traversal cost scales linearly with that coverage signal: `land_cost + coverage * (wetland_cost - land_cost)`, with the default endpoints still equal to 1 for dry land and 5 for fully wetland-covered cells.
 - Centralized, FedAvg, and gossip all start from the same initialized model state and use the same hidden width so comparisons are not confounded by model capacity or initialization drift.
 - `comm_every` is enforced during FedAvg and gossip training. Models still train locally every epoch, but communication dropout is only sampled on scheduled communication epochs.
 - Greedy-path evaluation averages over multiple seeded start nodes and reports both efficiency and success rate, so identical single-start rollouts no longer dominate the table.

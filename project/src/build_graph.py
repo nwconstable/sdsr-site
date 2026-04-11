@@ -7,7 +7,7 @@ Data object suitable for GNN training.
 Pipeline
 --------
 1. Create a 2D grid over the GeoDataFrame bounding box
-2. Assign wetland_presence node features (1 if cell intersects a wetland polygon)
+2. Assign fractional wetland-coverage node features
 3. Build 4-neighbor edge_index (up / down / left / right)
 4. Compute Dijkstra shortest-path distance from every node to a random goal
 5. Return a PyG Data object with goal-conditioned node features
@@ -24,6 +24,7 @@ import geopandas as gpd
 import numpy as np
 import torch
 from shapely.geometry import box
+from shapely.ops import unary_union
 from torch_geometric.data import Data
 
 # ---------------------------------------------------------------------------
@@ -64,20 +65,34 @@ def assign_wetland_features(
     cell_polys: np.ndarray,
 ) -> np.ndarray:
     """
-    Return a float32 array of shape (N,) with wetland_presence in {0.0, 1.0}.
+    Return a float32 array of shape (N,) with fractional wetland coverage.
 
-    Uses a spatial index (STRtree) for efficient intersection queries.
+    Coverage is computed as the fraction of each cell covered by the union of
+    clipped wetland geometry, so overlapping polygons do not double-count.
+
+    Uses a spatial index (STRtree) for efficient candidate queries.
     """
     sindex = gdf.sindex
-    wetland_presence = np.zeros(len(cell_polys), dtype=np.float32)
+    wetland_coverage = np.zeros(len(cell_polys), dtype=np.float32)
 
     for i, cell in enumerate(cell_polys):
         candidates = list(sindex.intersection(cell.bounds))
+        if not candidates:
+            continue
 
-        if candidates and gdf.iloc[candidates].intersects(cell).any():
-            wetland_presence[i] = 1.0
+        clipped_geoms = []
+        for geom in gdf.geometry.iloc[candidates]:
+            clipped = geom.intersection(cell)
+            if not clipped.is_empty:
+                clipped_geoms.append(clipped)
 
-    return wetland_presence
+        if not clipped_geoms:
+            continue
+
+        covered_area = unary_union(clipped_geoms).area
+        wetland_coverage[i] = np.float32(min(covered_area / cell.area, 1.0))
+
+    return wetland_coverage
 
 # ---------------------------------------------------------------------------
 # Graph construction
@@ -126,12 +141,10 @@ def compute_dijkstra_labels(
     """
     Shortest-path distance from every node to *goal_node*.
 
-    Edge cost equals the traversal cost of the *destination* node:
-      - wetland -> wetland_cost (default 5)
-      - land    -> land_cost    (default 1)
-
-    Because cost is symmetric, running Dijkstra *from* the goal gives the
-    same distances as running it *to* the goal.
+        Edge cost equals the traversal cost of the *destination* node, interpolated
+        linearly from its fractional wetland coverage:
+            - 0.0 coverage -> land_cost    (default 1)
+            - 1.0 coverage -> wetland_cost (default 5)
 
     Returns
     -------
@@ -144,7 +157,10 @@ def compute_dijkstra_labels(
         rng = random.Random(seed)
         goal_node = rng.randint(0, N - 1)
 
-    node_cost = np.where(wetland_presence > 0, wetland_cost, land_cost).astype(np.float64)
+    wetland_presence = np.clip(wetland_presence, 0.0, 1.0)
+    node_cost = (
+        land_cost + wetland_presence * (wetland_cost - land_cost)
+    ).astype(np.float64)
 
     # Adjacency list: adj[u] = [(v, cost_of_v), ...]
     adj: list[list[tuple[int, float]]] = [[] for _ in range(N)]
@@ -202,7 +218,7 @@ def build_pyg_data(
     -------
     data      : PyG Data with fields: x, edge_index, y, pos
                 where x contains goal-conditioned node features:
-                [wetland_presence, pos_x, pos_y, goal_x, goal_y, delta_x, delta_y]
+                [wetland_coverage, pos_x, pos_y, goal_x, goal_y, delta_x, delta_y]
     goal_node : the goal node index that was used
     """
     print(f"Building {grid_size}x{grid_size} grid graph ({grid_size**2} nodes)...")
@@ -211,12 +227,16 @@ def build_pyg_data(
     cell_polys, minx, miny, maxx, maxy, cell_w, cell_h = create_grid(gdf, grid_size)
 
     # 2. Wetland features
-    print("  Assigning wetland_presence features (may take a moment)...")
+    print("  Assigning fractional wetland coverage (may take a moment)...")
     wetland_presence = assign_wetland_features(gdf, cell_polys)
-    n_wet = int(wetland_presence.sum())
+    covered_cells = int(np.count_nonzero(wetland_presence > 0.0))
+    equivalent_wetland_cells = float(wetland_presence.sum())
+    mean_coverage = float(wetland_presence.mean())
 
-    print(f"  Wetland cells : {n_wet} / {len(cell_polys)} "
-          f"({100 * n_wet / len(cell_polys):.1f}%)")
+    print(f"  Covered cells : {covered_cells} / {len(cell_polys)} "
+          f"({100 * covered_cells / len(cell_polys):.1f}%)")
+    print(f"  Mean coverage : {100 * mean_coverage:.1f}% "
+          f"({equivalent_wetland_cells:.1f} cell-equivalents)")
 
     # 3. Edge index
     edge_index = build_edge_index(grid_size)
@@ -228,7 +248,7 @@ def build_pyg_data(
     print(f"  Goal node     : {goal_node}  "
           f"(row={goal_node // grid_size}, col={goal_node % grid_size})")
 
-    # 5. Normalised (x, y) cell-centre positions in [0, 1]
+    # 5. Normalised (x, y) cell-center positions in [0, 1]
     rows = np.arange(len(cell_polys)) // grid_size
     cols = np.arange(len(cell_polys)) % grid_size
     pos = torch.tensor(

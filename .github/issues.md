@@ -760,3 +760,70 @@ newly identified path-resolution defect with tighter CLI semantics.
 - [ ] Missing directories for the requested output target are created automatically
 - [ ] Path resolution cannot escape the `sdsr-site/project/results` base
 - [ ] `project/README.md` documents that `--output-dir` is rooted under `project/results/`
+
+---
+
+## Issue #20 — Replace binary wetland occupancy with fractional cell coverage ✓ DONE
+
+**Labels:** `feature` `data` `modeling` `documentation`
+**Files:** `project/src/build_graph.py`, `project/src/evaluations.py`, `project/README.md`
+**Depends on:** #13
+
+### Context
+The current graph builder marks a grid cell as wetland with a hard binary rule:
+if any wetland polygon intersects the cell, `wetland_presence[i] = 1.0`.
+That is easy to compute, but it collapses small edge touches and near-full-cell
+coverage into the same feature value.
+
+The user now wants a modest realism improvement without changing the overall
+experiment structure. The smallest coherent change is to replace the binary
+wetland indicator with **fractional wetland coverage per grid cell** while
+keeping the rest of the graph pipeline intact.
+
+Repository-specific implication: changing only the node feature would leave the
+ground-truth Dijkstra labels driven by the old binary threshold in
+`compute_dijkstra_labels`, which weakens the value of the realism change. For
+this issue, treat fractional coverage as the canonical per-cell wetland signal
+for both `data.x` and traversal-cost construction.
+
+Smallest reasonable assumption for ambiguous geometry cases: per-cell coverage
+should be computed as the fraction of the cell area covered by the **union** of
+intersecting wetland geometry clipped to that cell, so overlapping polygons do
+not double-count and the resulting value stays in `[0, 1]`.
+
+This is not covered by existing issues. Issue #13 established that `data.x`
+must contain sufficient task information, but it did not change the wetland
+channel from binary occupancy to fractional coverage.
+
+### Required behavior
+- Update `assign_wetland_features` in `project/src/build_graph.py` so it
+    returns a float32 array of per-cell wetland coverage fractions in `[0, 1]`
+    instead of `{0.0, 1.0}`.
+- Keep the spatial-index candidate filtering, but compute the exact per-cell
+    wetland fraction from clipped polygon geometry rather than a boolean
+    `intersects(...).any()` test.
+- Update `compute_dijkstra_labels` so node traversal cost scales with coverage
+    instead of thresholding on `wetland_presence > 0`. The simplest defensible
+    rule is linear interpolation between `land_cost` and `wetland_cost`, e.g.
+    `land_cost + coverage * (wetland_cost - land_cost)`.
+- Preserve the existing `data.x` feature layout and tensor shape, with the
+    first channel now representing fractional wetland coverage rather than binary
+    occupancy.
+- Update the status output in `build_pyg_data` so the printed summary remains
+    meaningful under fractional features. Do not keep reporting a raw "wetland
+    cells" count as though the feature were still binary.
+- Keep greedy-path terrain-cost evaluation aligned with the new fractional
+    coverage semantics so downstream path metrics use the same terrain model as
+    the Dijkstra labels.
+- Update `project/README.md` to document the new feature semantics and how
+    traversal costs now relate to fractional coverage.
+
+### Acceptance criteria
+- [x] `assign_wetland_features` returns a float32 array with one value per node, and every value is in `[0, 1]`
+- [x] A cell with no intersecting wetland geometry gets `0.0`, and a fully covered cell gets `1.0`
+- [x] Overlapping wetland polygons within a cell do not produce values greater than `1.0`
+- [x] `compute_dijkstra_labels` uses fractional coverage directly when constructing node traversal costs instead of thresholding with `wetland_presence > 0`
+- [x] `build_pyg_data` still produces a valid PyG `Data` object with the same feature dimension expected by downstream modules
+- [x] Console/status output in `build_pyg_data` reflects fractional coverage semantics rather than binary occupied-cell counting
+- [x] Greedy-path evaluation uses coverage-scaled traversal cost rather than a binary wetland threshold
+- [x] `project/README.md` explains that the first node feature is fractional wetland coverage and that Dijkstra costs scale with coverage

@@ -11,6 +11,15 @@ from torch_geometric.data import Data
 import matplotlib.pyplot as plt
 
 
+def _coverage_to_cost(
+    coverage: float,
+    wetland_cost: float = 5.0,
+    land_cost: float = 1.0,
+) -> float:
+    coverage = min(max(float(coverage), 0.0), 1.0)
+    return land_cost + coverage * (wetland_cost - land_cost)
+
+
 def _average_model_state(models: list[WetlandGCN]) -> dict[str, torch.Tensor]:
     avg_state: dict[str, torch.Tensor] = {}
     state_dicts = [model.state_dict() for model in models]
@@ -70,7 +79,11 @@ def _rollout_greedy_path(
         if not nbrs:
             break
         next_node = min(nbrs, key=lambda node: pred[node].item())
-        greedy_cost += 5.0 if data.x[next_node, 0].item() > 0.5 else 1.0
+        if data.x.dim() == 1:
+            coverage = data.x[next_node].item()
+        else:
+            coverage = data.x[next_node, 0].item()
+        greedy_cost += _coverage_to_cost(coverage)
         visited.add(next_node)
         current = next_node
         steps += 1
