@@ -163,7 +163,11 @@ class CommunicationChannel:
         self._round_num += 1
         return survivors
 
-    def gossip_pairs(self, drone_ids: list[int]) -> list[tuple[int, int]]:
+    def gossip_pairs(
+        self,
+        drone_ids: list[int],
+        allowed_pairs: list[tuple[int, int]] | None = None,
+    ) -> list[tuple[int, int]]:
         """Return non-overlapping random pairs of drones for gossip exchange.
 
         Applies per-drone dropout via ``sample_participants``, shuffles the
@@ -171,12 +175,39 @@ class CommunicationChannel:
         when the survivor count is odd.  The logger round counter advances
         by one (same as a ``sample_participants`` call).
         """
-        survivors = self.sample_participants(drone_ids)
-        self._rng.shuffle(survivors)
-        return [
-            (survivors[i], survivors[i + 1])
-            for i in range(0, len(survivors) - 1, 2)
+        if allowed_pairs is None:
+            survivors = self.sample_participants(drone_ids)
+            self._rng.shuffle(survivors)
+            return [
+                (survivors[i], survivors[i + 1])
+                for i in range(0, len(survivors) - 1, 2)
+            ]
+
+        eligible_nodes = sorted(
+            {
+                int(node_id)
+                for left, right in allowed_pairs
+                for node_id in (left, right)
+                if node_id in drone_ids
+            }
+        )
+        survivors = set(self.sample_participants(eligible_nodes))
+        shuffled_pairs = [
+            (int(left), int(right))
+            for left, right in allowed_pairs
+            if left in survivors and right in survivors
         ]
+        self._rng.shuffle(shuffled_pairs)
+
+        matched: set[int] = set()
+        selected_pairs: list[tuple[int, int]] = []
+        for left, right in shuffled_pairs:
+            if left in matched or right in matched:
+                continue
+            selected_pairs.append((left, right))
+            matched.add(left)
+            matched.add(right)
+        return selected_pairs
 
 
 # ---------------------------------------------------------------------------

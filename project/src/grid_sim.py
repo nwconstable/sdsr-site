@@ -13,6 +13,7 @@ from __future__ import annotations
 import random
 import sys
 from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 import torch
@@ -37,25 +38,36 @@ class SpatialGridSimulator:
     """
 
     def __init__(
-        self, grid_size: int, partitions: list[np.ndarray], data: Data
+        self,
+        grid_size: int,
+        partitions: list[np.ndarray],
+        data: Data,
+        seed: int | None = None,
+        positions: dict[int, int] | None = None,
     ) -> None:
         self.grid_size = grid_size
         self.partitions = partitions
         self.data = data
+        self._rng = random.Random(seed)
+        self._base_station = (grid_size // 2) * grid_size + (grid_size // 2)
 
         # Precomputed partition membership sets for O(1) lookup
         self._partition_sets: list[set[int]] = [
             set(p.tolist()) for p in partitions
         ]
 
-        # _positions: drone_id -> current node index
-        # Initial position = the actual node closest to the numeric centroid
         self._positions: dict[int, int] = {}
-        for drone_id, part in enumerate(partitions):
-            if len(part) > 0:
-                centroid = float(np.mean(part))
-                closest = int(part[np.argmin(np.abs(part.astype(float) - centroid))])
-                self._positions[drone_id] = closest
+        if positions is not None:
+            for drone_id, node_idx in positions.items():
+                self._validate_position(drone_id, node_idx)
+                self._positions[int(drone_id)] = int(node_idx)
+        else:
+            # Initial position = the actual node closest to the numeric centroid
+            for drone_id, part in enumerate(partitions):
+                if len(part) > 0:
+                    centroid = float(np.mean(part))
+                    closest = int(part[np.argmin(np.abs(part.astype(float) - centroid))])
+                    self._positions[drone_id] = closest
 
     # ------------------------------------------------------------------
     # Public API
@@ -64,6 +76,62 @@ class SpatialGridSimulator:
     def drone_positions(self) -> dict[int, int]:
         """Return a copy of the current drone_id -> node_index mapping."""
         return self._positions.copy()
+
+    def clone(self) -> SpatialGridSimulator:
+        """Return a simulator copy with the same positions and RNG state."""
+        cloned = SpatialGridSimulator(
+            self.grid_size,
+            self.partitions,
+            self.data,
+            positions=self._positions.copy(),
+        )
+        cloned._rng.setstate(self._rng.getstate())
+        return cloned
+
+    def base_station_node(self) -> int:
+        """Return the fixed base-station node used for FedAvg reachability."""
+        return self._base_station
+
+    def drones_within_radius(
+        self,
+        center_node: int,
+        radius: int,
+        drone_ids: Iterable[int] | None = None,
+    ) -> list[int]:
+        """Return drones whose current positions are within *radius* hops."""
+        if radius < 0:
+            raise ValueError(f"radius must be non-negative, got {radius}")
+        if drone_ids is None:
+            drone_ids = self._positions.keys()
+        center_row, center_col = divmod(center_node, self.grid_size)
+        reachable: list[int] = []
+        for drone_id in drone_ids:
+            pos = self._positions[int(drone_id)]
+            row, col = divmod(pos, self.grid_size)
+            if abs(row - center_row) + abs(col - center_col) <= radius:
+                reachable.append(int(drone_id))
+        return sorted(reachable)
+
+    def proximity_pairs(
+        self,
+        radius: int,
+        drone_ids: Iterable[int] | None = None,
+    ) -> list[tuple[int, int]]:
+        """Return all drone pairs whose positions are within *radius* hops."""
+        if radius < 0:
+            raise ValueError(f"radius must be non-negative, got {radius}")
+        source_ids = self._positions.keys() if drone_ids is None else drone_ids
+        ids = sorted(int(drone_id) for drone_id in source_ids)
+        pairs: list[tuple[int, int]] = []
+        for idx, left in enumerate(ids):
+            left_pos = self._positions[left]
+            left_row, left_col = divmod(left_pos, self.grid_size)
+            for right in ids[idx + 1:]:
+                right_pos = self._positions[right]
+                right_row, right_col = divmod(right_pos, self.grid_size)
+                if abs(left_row - right_row) + abs(left_col - right_col) <= radius:
+                    pairs.append((left, right))
+        return pairs
 
     def step_drones(self) -> None:
         """Move each drone to a random adjacent node within its partition.
@@ -83,7 +151,7 @@ class SpatialGridSimulator:
                     if neighbor in self._partition_sets[drone_id]:
                         candidates.append(neighbor)
             if candidates:
-                self._positions[drone_id] = random.choice(candidates)
+                self._positions[drone_id] = self._rng.choice(candidates)
 
     def get_local_view(self, drone_id: int, radius: int = 1) -> Data:
         """Return a PyG Data subgraph of nodes within *radius* hops of the drone.
@@ -111,6 +179,14 @@ class SpatialGridSimulator:
 
         node_indices = np.array(sorted(visited), dtype=np.int64)
         return build_local_subgraph(self.data, node_indices)
+
+    def _validate_position(self, drone_id: int, node_idx: int) -> None:
+        if drone_id < 0 or drone_id >= len(self.partitions):
+            raise ValueError(f"Unknown drone_id {drone_id}")
+        if node_idx not in self._partition_sets[drone_id]:
+            raise ValueError(
+                f"Node {node_idx} is not in partition {drone_id}"
+            )
 
     def visualize(self, step: int, output_dir: str | Path) -> None:
         """Save wetland heatmap + drone markers to output_dir/sim_step_NNNN.png."""

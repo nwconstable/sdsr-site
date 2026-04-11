@@ -22,6 +22,7 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 
 from comms import CommunicationChannel
+from grid_sim import SpatialGridSimulator
 from model import WetlandGCN
 from partition import build_local_subgraph
 
@@ -105,6 +106,10 @@ def train_gossip(
     time_budget_ms: int | None = None,
     initial_state_dict: dict[str, torch.Tensor] | None = None,
     hidden_channels: int = 64,
+    simulator: SpatialGridSimulator | None = None,
+    simulator_view_radius: int = 2,
+    simulator_comm_radius: int = 2,
+    move_drones: bool = False,
 ) -> tuple[list[float], list[WetlandGCN]]:
     """Fully decentralised gossip training.
 
@@ -149,13 +154,28 @@ def train_gossip(
     for model in drone_models:
         model.load_state_dict(_clone_state_dict(initial_state_dict))
     optimizers = [torch.optim.Adam(m.parameters(), lr=lr) for m in drone_models]
-    local_subgraphs = [build_local_subgraph(data, idx) for idx in partitions]
+    use_simulator = simulator is not None
+    local_subgraphs = None
+    if not use_simulator:
+        local_subgraphs = [build_local_subgraph(data, idx) for idx in partitions]
 
     losses: list[float] = []
 
     for comm_round in range(epochs):
+        if use_simulator and move_drones:
+            simulator.step_drones()
+
+        round_subgraphs = (
+            [
+                simulator.get_local_view(drone_id, radius=simulator_view_radius)
+                for drone_id in drone_ids
+            ]
+            if use_simulator
+            else local_subgraphs
+        )
+
         # 1. Local training — apply per-drone compute constraints
-        for model, opt, sub in zip(drone_models, optimizers, local_subgraphs):
+        for model, opt, sub in zip(drone_models, optimizers, round_subgraphs):
             model.train()
             _prev_threads = torch.get_num_threads()
             torch.set_num_threads(num_threads)
@@ -175,7 +195,13 @@ def train_gossip(
 
         # 2. Gossip exchange — pairs determined by the channel
         if channel.is_comm_round(comm_round):
-            pairs = channel.gossip_pairs(drone_ids)
+            if use_simulator:
+                allowed_pairs = simulator.proximity_pairs(
+                    simulator_comm_radius, drone_ids=drone_ids
+                )
+                pairs = channel.gossip_pairs(drone_ids, allowed_pairs=allowed_pairs)
+            else:
+                pairs = channel.gossip_pairs(drone_ids)
             for i, j in pairs:
                 sd_i = _clone_state_dict(drone_models[i].state_dict())
                 sd_j = _clone_state_dict(drone_models[j].state_dict())

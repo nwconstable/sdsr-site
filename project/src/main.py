@@ -100,6 +100,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional per-drone local-training budget in milliseconds.",
     )
+    parser.add_argument(
+        "--use-simulator-integration",
+        action="store_true",
+        help=(
+            "Use SpatialGridSimulator state to define decentralized local views "
+            "and proximity-limited communication."
+        ),
+    )
+    parser.add_argument(
+        "--simulator-view-radius",
+        type=int,
+        default=2,
+        help="Hop radius for simulator-derived decentralized local views.",
+    )
+    parser.add_argument(
+        "--simulator-comm-radius",
+        type=int,
+        default=2,
+        help="Manhattan-radius communication limit for simulator-driven decentralized rounds.",
+    )
+    parser.add_argument(
+        "--simulator-step-drones",
+        action="store_true",
+        help="Move drones by one partition-respecting grid step before each decentralized round.",
+    )
     return parser
 
 
@@ -111,6 +136,8 @@ def validate_args(args: argparse.Namespace) -> None:
         "local_steps": args.local_steps,
         "comm_every": args.comm_every,
         "num_threads": args.num_threads,
+        "simulator_view_radius": args.simulator_view_radius,
+        "simulator_comm_radius": args.simulator_comm_radius,
     }
     for name, value in positive_int_fields.items():
         if value <= 0:
@@ -210,8 +237,24 @@ def main(argv: list[str] | None = None) -> int:
         baseline_p=args.baseline_p,
         seed=args.seed,
     )
-    simulator = SpatialGridSimulator(args.grid_size, partitions, data)
-    print(f"  Initial drone positions: {simulator.drone_positions()}")
+    fedavg_simulator = None
+    gossip_simulator = None
+    if args.use_simulator_integration:
+        base_simulator = SpatialGridSimulator(
+            args.grid_size, partitions, data, seed=args.seed
+        )
+        fedavg_simulator = base_simulator.clone()
+        gossip_simulator = base_simulator.clone()
+        print(
+            "  Simulator-driven decentralized mode enabled "
+            f"(view_radius={args.simulator_view_radius}, "
+            f"comm_radius={args.simulator_comm_radius}, "
+            f"move_drones={args.simulator_step_drones})"
+        )
+        print(f"  Initial drone positions: {base_simulator.drone_positions()}")
+        print(f"  FedAvg base station node: {base_simulator.base_station_node()}")
+    else:
+        print("  Simulator-driven decentralized mode disabled.")
 
     hidden_channels = 64
     initial_model = WetlandGCN(
@@ -238,6 +281,10 @@ def main(argv: list[str] | None = None) -> int:
         args.time_budget,
         initial_state_dict=initial_state_dict,
         hidden_channels=hidden_channels,
+        simulator=fedavg_simulator,
+        simulator_view_radius=args.simulator_view_radius,
+        simulator_comm_radius=args.simulator_comm_radius,
+        move_drones=args.simulator_step_drones,
     )
     gossip_losses, gossip_models = train_gossip(
         data,
@@ -250,6 +297,10 @@ def main(argv: list[str] | None = None) -> int:
         args.time_budget,
         initial_state_dict=initial_state_dict,
         hidden_channels=hidden_channels,
+        simulator=gossip_simulator,
+        simulator_view_radius=args.simulator_view_radius,
+        simulator_comm_radius=args.simulator_comm_radius,
+        move_drones=args.simulator_step_drones,
     )
     print(
         f"  FedAvg final MSE: {fedavg_losses[-1]:.4f} | "

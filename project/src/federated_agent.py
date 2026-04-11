@@ -14,6 +14,7 @@ from torch_geometric.data import Data
 from torch_geometric.utils import subgraph
 
 from comms import CommunicationChannel
+from grid_sim import SpatialGridSimulator
 from model import WetlandGCN
 from partition import build_local_subgraph
 
@@ -272,6 +273,10 @@ def train_fedavg(
     time_budget_ms: int | None = None,
     initial_state_dict: Dict[str, torch.Tensor] | None = None,
     hidden_channels: int = 64,
+    simulator: SpatialGridSimulator | None = None,
+    simulator_view_radius: int = 2,
+    simulator_comm_radius: int = 2,
+    move_drones: bool = False,
 ) -> tuple[list[float], WetlandGCN]:
     """
     data           : Full graph data object
@@ -296,15 +301,33 @@ def train_fedavg(
 
     central.global_params = _clone_state_dict(initial_state_dict)
     central.broadcast_params()
-    local_partitions = [build_local_subgraph(data, partition) for partition in partitions]
+    use_simulator = simulator is not None
+    local_partitions = None
+    if not use_simulator:
+        local_partitions = [build_local_subgraph(data, partition) for partition in partitions]
 
     global_loss_curve: list[float] = []
 
     for epoch in range(epochs):
+        if use_simulator and move_drones:
+            simulator.step_drones()
+
+        drone_positions = simulator.drone_positions() if use_simulator else {}
+
         # Each node trains locally on its partition
         for i, node in enumerate(nodes):
+            if use_simulator:
+                node.current_loc = drone_positions.get(i)
+                local_training_view = simulator.get_local_view(
+                    i, radius=simulator_view_radius
+                )
+            else:
+                local_training_view = local_partitions[i]
+
             node.train_local(
-                local_partitions[i],
+                local_training_view,
+                location=None if use_simulator else node.current_loc,
+                radius=simulator_view_radius,
                 epochs=local_steps,
                 lr=lr,
                 num_threads=num_threads,
@@ -314,7 +337,16 @@ def train_fedavg(
             )
 
         if channel.is_comm_round(epoch):
-            participant_ids = channel.sample_participants(list(range(len(nodes))))
+            if use_simulator:
+                participant_ids = channel.sample_participants(
+                    simulator.drones_within_radius(
+                        simulator.base_station_node(),
+                        simulator_comm_radius,
+                        drone_ids=list(range(len(nodes))),
+                    )
+                )
+            else:
+                participant_ids = channel.sample_participants(list(range(len(nodes))))
             updates = [nodes[i].send_local_update() for i in participant_ids]
 
             if updates:

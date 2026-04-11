@@ -827,3 +827,95 @@ channel from binary occupancy to fractional coverage.
 - [x] Console/status output in `build_pyg_data` reflects fractional coverage semantics rather than binary occupied-cell counting
 - [x] Greedy-path evaluation uses coverage-scaled traversal cost rather than a binary wetland threshold
 - [x] `project/README.md` explains that the first node feature is fractional wetland coverage and that Dijkstra costs scale with coverage
+
+---
+
+## Issue #21 — Integrate `SpatialGridSimulator` into decentralized local training and proximity-limited communication
+
+**Labels:** `feature` `simulation` `training` `documentation`
+**Files:** `project/src/grid_sim.py`, `project/src/comms.py`, `project/src/train.py`, `project/src/federated_agent.py`, `project/src/main.py`, `project/README.md`
+**Depends on:** #2, #3, #5, #6, #8, #11, #14
+
+### Context
+The repository currently constructs a `SpatialGridSimulator` in `main.py`, but
+the experimental pipeline still trains decentralized methods on static,
+precomputed subgraphs and uses communication scheduling that ignores drone
+positions. Concretely:
+- `train_gossip` precomputes `local_subgraphs = [build_local_subgraph(...)]`
+    once and reuses them for the full run.
+- `train_fedavg` precomputes `local_partitions` once and calls
+    `NodeAgent.train_local(..., use_full_graph=True)`, so the agent-level local
+    subset logic and simulator position are bypassed.
+- `CommunicationChannel.sample_participants` and `gossip_pairs` operate on the
+    full drone-ID list without any spatial eligibility filter.
+
+The user now wants the simulator to matter operationally, not just for initial
+position reporting: each decentralized drone should train on a local view taken
+from its current position, and communication eligibility should be constrained
+by drone proximity in addition to the existing global dropout schedule.
+
+This is not covered by existing issues. Issue #3 implemented the simulator
+itself, but did not wire it into training or communication. Issues #2, #5, #6,
+and #8 established the current static-partition and global-channel behavior;
+this issue changes those semantics and must be tracked separately.
+
+Smallest reasonable assumptions for the current codebase:
+- Centralized training remains unchanged and does not use the simulator.
+- Simulator-driven behavior is optional and disabled by default so existing
+    seeded runs remain comparable.
+- In simulator-driven mode, each decentralized drone advances at most one grid
+    step per training round via `SpatialGridSimulator.step_drones()` before
+    selecting its current training view.
+- The local training graph for a drone is `simulator.get_local_view(drone_id,
+    radius=view_radius)` rather than a one-time partition subgraph.
+- Proximity is measured in grid hops / Manhattan distance between current drone
+    positions.
+- For gossip, only drones that are both dropout survivors and within
+    `comm_radius` of each other may exchange weights.
+- For FedAvg, a concrete server-reachability rule must be documented. The
+    smallest defensible rule is to treat the central coordinator as a fixed
+    base-station node at the grid centroid; only drones within `comm_radius` of
+    that base station may uplink on a communication round.
+- Spatial ineligibility is a topology constraint, not a dropout event. The
+    interruption logger should continue to represent stochastic communication
+    dropout, not lack of proximity.
+
+### Required behavior
+- Extend `main.py` to expose and validate simulator-integration settings for
+    decentralized runs, such as a local-view radius, communication radius, and
+    whether drones step each round before training/communication.
+- Thread a shared `SpatialGridSimulator` instance into `train_fedavg` and
+    `train_gossip` when simulator-driven mode is enabled.
+- Update `train_gossip` so each drone refreshes its local training graph from
+    the simulator each round instead of using a fixed precomputed subgraph for
+    the entire run.
+- Update `train_fedavg` so each node trains on a simulator-derived local view
+    rather than the current fixed partition/full-graph bypass path.
+- Extend `grid_sim.py` and/or `comms.py` with a clear API for proximity
+    filtering based on current positions. The implementation may add helper
+    methods such as pairwise communication-neighbour queries or base-station
+    reachability helpers, but the final API must keep the training loops easy to
+    audit.
+- Apply stochastic dropout only after establishing the topology-eligible set
+    for the current communication round, and keep dropout logging semantics
+    explicit and consistent.
+- Preserve existing behavior when simulator-driven mode is disabled.
+- Update `project/README.md` so the experiment description matches the new
+    simulator-driven local-data and communication-topology behavior.
+
+### Acceptance criteria
+- [x] With simulator integration disabled, `train_fedavg`, `train_gossip`, and `main.py` retain their current fixed-partition / global-communication behavior and still run successfully
+- [x] `main.py` accepts documented simulator-integration arguments for decentralized runs, with defaults that preserve existing behavior
+- [x] In simulator-driven mode, each decentralized drone's training data is refreshed from `SpatialGridSimulator.get_local_view(...)` each round instead of being fixed once at startup
+- [x] Drone motion, when enabled, occurs at a documented cadence and keeps each drone inside its partition
+- [x] Gossip communication rounds only form pairs that satisfy both the dropout filter and the configured proximity rule
+- [x] FedAvg communication rounds only aggregate updates from drones that satisfy both the dropout filter and the documented server-reachability rule
+- [x] The communication logger does not misclassify out-of-range drones as dropout or blackout events
+- [ ] A seeded end-to-end run with simulator integration enabled completes without runtime errors and shows position-dependent decentralized participation over time
+- [x] `project/README.md` documents the simulator-driven training mode, proximity-based communication semantics, and any new CLI arguments
+
+Validation note: seeded synthetic in-memory validations for both the legacy and
+simulator-driven decentralized paths passed after implementation. A full
+real-data CLI run with simulator integration is still blocked in this
+environment by an upstream GeoPackage/Shapely allocation failure during
+`load_gdf()`, before the new simulator-driven training code executes.

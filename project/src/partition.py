@@ -88,13 +88,13 @@ def build_local_subgraph(data: Data, node_indices: np.ndarray) -> Data:
     )
     sub_data = Data(x=data.x[global_idx], edge_index=sub_ei, y=data.y[global_idx])
     sub_data.global_node_idx = global_idx
-    if hasattr(data, "pos"):
+    if getattr(data, "pos", None) is not None:
         sub_data.pos = data.pos[global_idx]
     if hasattr(data, "grid_size"):
         sub_data.grid_size = int(data.grid_size)
     if hasattr(data, "goal_node"):
         sub_data.goal_node = int(data.goal_node)
-    if hasattr(data, "goal_pos"):
+    if getattr(data, "goal_pos", None) is not None:
         sub_data.goal_pos = data.goal_pos.clone()
     return sub_data
 

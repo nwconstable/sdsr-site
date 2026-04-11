@@ -34,6 +34,10 @@ python main.py \
     --lr 1e-3 \
     --seed 42 \
     --num-threads 4 \
+    --use-simulator-integration \
+    --simulator-view-radius 2 \
+    --simulator-comm-radius 3 \
+    --simulator-step-drones \
     --output-dir ../results
 ```
 
@@ -64,6 +68,10 @@ python main.py \
 | `--output-dir` | str | project/results | Output directory for plots and logs |
 | `--num-threads` | int | 4 | CPU thread cap per drone during local training |
 | `--time-budget` | int | None | Wall-clock ms budget per drone per round (None = unconstrained) |
+| `--use-simulator-integration` | flag | off | Refresh decentralized local training data from simulator positions and gate decentralized communication by proximity |
+| `--simulator-view-radius` | int | 2 | Hop radius for simulator-derived local subgraphs during FedAvg and gossip |
+| `--simulator-comm-radius` | int | 2 | Manhattan-radius communication limit for simulator-driven FedAvg uplinks and gossip exchanges |
+| `--simulator-step-drones` | flag | off | Move each drone by one in-partition grid step before each decentralized round |
 
 `main.py` validates CLI argument ranges before starting and emits six stage
 status updates so long experiment runs are easier to monitor. Re-running with
@@ -81,9 +89,9 @@ graph construction, communication events, and reported metrics.
 | `model.py` | Done | `WetlandGCN`: 2-layer GCN for node-level distance regression from goal-conditioned features |
 | `partition.py` | Done | `partition_nodes` (column-strip) and `build_local_subgraph` |
 | `comms.py` | Done | `CommunicationChannel` (schedule, dropout, gossip pairing) + `ProtocolInterruptionLogger` |
-| `train.py` | Done | `train_centralized`, `train_gossip` (with compute constraints) |
-| `federated_agent.py` | Done | `NodeAgent` / `CentralAgent` + `train_fedavg`; compute constraints supported |
-| `grid_sim.py` | Done | `SpatialGridSimulator` — drone positions, movement, and per-step visualisation |
+| `train.py` | Done | `train_centralized`, `train_gossip` (with compute constraints and optional simulator-driven local views / proximity gossip) |
+| `federated_agent.py` | Done | `NodeAgent` / `CentralAgent` + `train_fedavg`; compute constraints and optional simulator-driven local views / base-station reachability |
+| `grid_sim.py` | Done | `SpatialGridSimulator` — drone positions, movement, local-view extraction, proximity queries, and per-step visualisation |
 | `evaluations.py` | Done | `compare_convergence`, multi-start greedy-path evaluation, and result plots |
 | `main.py` | Done | Full experiment entry point with argparse CLI |
 | `build_synthetic.py` | Future | Synthetic grid graph without GeoPackage (Issue #9, post-validation) |
@@ -122,6 +130,24 @@ train_gossip(data, partitions, channel, epochs=50, local_steps=20,
              num_threads=2, time_budget_ms=100)
 ```
 
+### Simulator-Driven Decentralized Mode
+
+When `--use-simulator-integration` is enabled, centralized training still uses
+the full graph, but FedAvg and gossip stop training on one fixed partition
+subgraph for the entire run.
+
+- Each decentralized drone reads a fresh local training graph from
+    `SpatialGridSimulator.get_local_view(...)` at every round.
+- If `--simulator-step-drones` is enabled, drones move by one
+    partition-respecting grid step before that round's local-view extraction.
+- Gossip exchanges are limited to dropout survivors that are also within the
+    configured Manhattan communication radius of one another.
+- FedAvg uses the same dropout model, but only drones within the configured
+    communication radius of a fixed grid-centroid base station may uplink their
+    updates on a communication round.
+- Being out of range is treated as a topology constraint, not as a dropout or
+    blackout event in `interruptions.json`.
+
 ### Modeling Notes
 
 - `data.x` now contains 7 features per node: fractional wetland coverage, normalized `(x, y)` position, normalized goal `(x, y)`, and goal-relative deltas.
@@ -129,6 +155,7 @@ train_gossip(data, partitions, channel, epochs=50, local_steps=20,
 - Dijkstra traversal cost scales linearly with that coverage signal: `land_cost + coverage * (wetland_cost - land_cost)`, with the default endpoints still equal to 1 for dry land and 5 for fully wetland-covered cells.
 - Centralized, FedAvg, and gossip all start from the same initialized model state and use the same hidden width so comparisons are not confounded by model capacity or initialization drift.
 - `comm_every` is enforced during FedAvg and gossip training. Models still train locally every epoch, but communication dropout is only sampled on scheduled communication epochs.
+- When simulator integration is enabled, FedAvg and gossip still start from matched simulator states, but their local data access and communication participation become position-dependent through simulator local views and proximity filtering.
 - Greedy-path evaluation averages over multiple seeded start nodes and reports both efficiency and success rate, so identical single-start rollouts no longer dominate the table.
 
 ---
