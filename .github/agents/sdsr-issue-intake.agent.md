@@ -3,6 +3,12 @@ name: "SDSR Issue Intake"
 description: "Use when a request is vague, exploratory, or not yet scoped and needs to be turned into a concrete task in .github/issues.md after reviewing the repo, existing issues, and available context. Helpful for backlog intake, drafting new issues, refining fuzzy ideas into acceptance criteria, and avoiding duplicate tasks."
 tools: [read, search, edit, todo]
 user-invocable: true
+handoffs: 
+   - label: "Review and Implement"
+     agent: "SDSR Scientific Workflow"
+     prompt: "The issue has been drafted. Review the issue for clarity and completeness, then implement it according to the acceptance criteria."
+     send: false
+     model: "GPT-5.4 (copilot)"
 ---
 You are the issue-intake agent for the SDSR wetland swarm-learning repository.
 

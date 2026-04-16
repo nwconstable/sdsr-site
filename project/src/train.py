@@ -13,6 +13,7 @@ train_gossip       : fully decentralised gossip training across K drone models
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 import sys
 import time
 
@@ -55,6 +56,28 @@ def _evaluate_state_dict(
     eval_model.eval()
     with torch.no_grad():
         return F.mse_loss(eval_model(data.x, data.edge_index), data.y).item()
+
+
+def _predict_state_dict(
+    data: Data,
+    state_dict: dict[str, torch.Tensor],
+    hidden_channels: int,
+) -> torch.Tensor:
+    eval_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    eval_model.load_state_dict(state_dict)
+    eval_model.eval()
+    with torch.no_grad():
+        return eval_model(data.x, data.edge_index).detach().cpu().reshape(-1)
+
+
+def _should_save_snapshot(epoch: int, total_epochs: int, snapshot_every: int) -> bool:
+    if snapshot_every <= 0:
+        return False
+    if epoch == 0 or epoch == total_epochs:
+        return True
+    return epoch % snapshot_every == 0
 
 
 def train_centralized(
@@ -110,6 +133,9 @@ def train_gossip(
     simulator_view_radius: int = 2,
     simulator_comm_radius: int = 2,
     move_drones: bool = False,
+    snapshot_every: int = 0,
+    snapshot_output_dir: str | Path | None = None,
+    snapshot_method_name: str = "Gossip",
 ) -> tuple[list[float], list[WetlandGCN]]:
     """Fully decentralised gossip training.
 
@@ -155,11 +181,28 @@ def train_gossip(
         model.load_state_dict(_clone_state_dict(initial_state_dict))
     optimizers = [torch.optim.Adam(m.parameters(), lr=lr) for m in drone_models]
     use_simulator = simulator is not None
+    if snapshot_every > 0 and not use_simulator:
+        raise ValueError("Snapshot export requires a simulator-backed gossip run.")
+    if snapshot_every > 0 and snapshot_output_dir is None:
+        raise ValueError("snapshot_output_dir is required when snapshot_every > 0.")
     local_subgraphs = None
     if not use_simulator:
         local_subgraphs = [build_local_subgraph(data, idx) for idx in partitions]
 
     losses: list[float] = []
+
+    if use_simulator and _should_save_snapshot(0, epochs, snapshot_every):
+        initial_avg_state = _average_state_dicts(
+            [model.state_dict() for model in drone_models]
+        )
+        simulator.save_snapshot(
+            epoch=0,
+            output_dir=snapshot_output_dir,
+            method_name=snapshot_method_name,
+            node_values=_predict_state_dict(data, initial_avg_state, hidden_channels),
+            metric_label="MSE",
+            metric_value=_evaluate_state_dict(data, initial_avg_state, hidden_channels),
+        )
 
     for comm_round in range(epochs):
         if use_simulator and move_drones:
@@ -216,6 +259,19 @@ def train_gossip(
             [model.state_dict() for model in drone_models]
         )
         losses.append(_evaluate_state_dict(data, avg_global, hidden_channels))
+
+        completed_rounds = comm_round + 1
+        if use_simulator and _should_save_snapshot(
+            completed_rounds, epochs, snapshot_every
+        ):
+            simulator.save_snapshot(
+                epoch=completed_rounds,
+                output_dir=snapshot_output_dir,
+                method_name=snapshot_method_name,
+                node_values=_predict_state_dict(data, avg_global, hidden_channels),
+                metric_label="MSE",
+                metric_value=losses[-1],
+            )
 
     return losses, drone_models
 

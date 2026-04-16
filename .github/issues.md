@@ -919,3 +919,66 @@ simulator-driven decentralized paths passed after implementation. A full
 real-data CLI run with simulator integration is still blocked in this
 environment by an upstream GeoPackage/Shapely allocation failure during
 `load_gdf()`, before the new simulator-driven training code executes.
+
+---
+
+## Issue #22 — Add periodic experiment-state snapshot export during training ✓ DONE
+
+**Labels:** `feature` `simulation` `documentation`
+**Files:** `project/src/main.py`, `project/src/train.py`, `project/src/federated_agent.py`, `project/src/grid_sim.py`, `project/README.md`
+**Depends on:** #21
+
+### Context
+The repository already has the pieces needed for static simulator visuals: `main.py`
+constructs `SpatialGridSimulator` instances for FedAvg and gossip when
+`--use-simulator-integration` is enabled, and `grid_sim.py` already exposes
+`SpatialGridSimulator.visualize(...)` to write PNG frames of drone positions on
+top of the wetland grid. However, the end-to-end experiment never calls that
+visualization path during training, so a user cannot inspect how the spatial
+state evolves over time.
+
+The new request is for visual representations of the experiment, for example a
+state image every 5 epochs. This is not covered by Issue #21: that issue makes
+simulator state affect decentralized training and communication, but it does not
+persist periodic state artifacts for later inspection.
+
+Smallest reasonable assumptions for this issue:
+- Standardize on PNG output rather than adding both JPG and PNG.
+- Scope the snapshots to simulator-driven decentralized methods (FedAvg and
+    gossip), since centralized training has no per-drone spatial state to render.
+- Make the feature optional and disabled by default so existing runs and output
+    volume remain unchanged unless explicitly requested.
+
+### Required behavior
+- Add a CLI/configurable snapshot cadence in `main.py`, such as
+    `--snapshot-every`, with `0` meaning disabled.
+- When snapshot export is enabled together with `--use-simulator-integration`,
+    save experiment-state PNGs for both FedAvg and gossip at the requested epoch
+    cadence during the real training loops rather than only in a standalone smoke
+    test.
+- Save snapshots into method-specific subdirectories under the selected output
+    directory so the two decentralized runs do not overwrite one another.
+- Include enough identifying information in the saved artifact naming and/or
+    figure title to tell which method and epoch each image corresponds to.
+- Define the cadence precisely. The smallest defensible rule is: save the
+    initial state at epoch 0, then save again after every `N` training rounds,
+    and also save the final state if the run ends off-cadence.
+- Make the rendered state informative even when drone motion is disabled. The
+    smallest defensible behavior is to render the current decentralized model's
+    full-grid prediction field with drone positions overlaid, rather than a
+    static wetland background alone.
+- Keep behavior explicit when snapshot export is requested without simulator
+    integration. The simplest acceptable behavior is to reject that argument
+    combination in `validate_args(...)` with a clear error.
+- Update `project/README.md` so the new CLI option and output artifact layout
+    are documented.
+
+### Acceptance criteria
+- [x] `main.py` accepts a documented snapshot-cadence argument whose default leaves current runs unchanged
+- [x] Requesting snapshots without `--use-simulator-integration` fails fast with a clear validation error, or an equally explicit documented behavior is implemented
+- [x] FedAvg training writes PNG state snapshots into a dedicated method-specific output directory at the configured cadence
+- [x] Gossip training writes PNG state snapshots into a dedicated method-specific output directory at the configured cadence
+- [x] Snapshot filenames and/or figure titles identify the method and epoch unambiguously
+- [x] Snapshot renders reflect evolving decentralized model state even when drone positions remain fixed
+- [x] A seeded smoke test or small end-to-end run with `--snapshot-every 5` produces multiple non-empty PNG files without interrupting training
+- [x] `project/README.md` documents the new option and where the snapshot images are written

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 import sys
 from typing import Any, Dict, List, Optional, Union
 import uuid
@@ -48,6 +49,28 @@ def _evaluate_state_dict(
     with torch.no_grad():
         out = eval_model(data.x, data.edge_index)
         return F.mse_loss(out, data.y).item()
+
+
+def _predict_state_dict(
+    data: Data,
+    state_dict: Dict[str, torch.Tensor],
+    hidden_channels: int,
+) -> torch.Tensor:
+    eval_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    eval_model.load_state_dict(state_dict)
+    eval_model.eval()
+    with torch.no_grad():
+        return eval_model(data.x, data.edge_index).detach().cpu().reshape(-1)
+
+
+def _should_save_snapshot(epoch: int, total_epochs: int, snapshot_every: int) -> bool:
+    if snapshot_every <= 0:
+        return False
+    if epoch == 0 or epoch == total_epochs:
+        return True
+    return epoch % snapshot_every == 0
 
 #
 # Node Agent Class
@@ -277,6 +300,9 @@ def train_fedavg(
     simulator_view_radius: int = 2,
     simulator_comm_radius: int = 2,
     move_drones: bool = False,
+    snapshot_every: int = 0,
+    snapshot_output_dir: str | Path | None = None,
+    snapshot_method_name: str = "FedAvg",
 ) -> tuple[list[float], WetlandGCN]:
     """
     data           : Full graph data object
@@ -302,11 +328,25 @@ def train_fedavg(
     central.global_params = _clone_state_dict(initial_state_dict)
     central.broadcast_params()
     use_simulator = simulator is not None
+    if snapshot_every > 0 and not use_simulator:
+        raise ValueError("Snapshot export requires a simulator-backed FedAvg run.")
+    if snapshot_every > 0 and snapshot_output_dir is None:
+        raise ValueError("snapshot_output_dir is required when snapshot_every > 0.")
     local_partitions = None
     if not use_simulator:
         local_partitions = [build_local_subgraph(data, partition) for partition in partitions]
 
     global_loss_curve: list[float] = []
+
+    if use_simulator and _should_save_snapshot(0, epochs, snapshot_every):
+        simulator.save_snapshot(
+            epoch=0,
+            output_dir=snapshot_output_dir,
+            method_name=snapshot_method_name,
+            node_values=_predict_state_dict(data, central.global_params, hidden_channels),
+            metric_label="MSE",
+            metric_value=_evaluate_state_dict(data, central.global_params, hidden_channels),
+        )
 
     for epoch in range(epochs):
         if use_simulator and move_drones:
@@ -355,6 +395,19 @@ def train_fedavg(
 
         avg_state = _average_state_dicts([node.model_params for node in nodes])
         global_loss_curve.append(_evaluate_state_dict(data, avg_state, hidden_channels))
+
+        completed_rounds = epoch + 1
+        if use_simulator and _should_save_snapshot(
+            completed_rounds, epochs, snapshot_every
+        ):
+            simulator.save_snapshot(
+                epoch=completed_rounds,
+                output_dir=snapshot_output_dir,
+                method_name=snapshot_method_name,
+                node_values=_predict_state_dict(data, avg_state, hidden_channels),
+                metric_label="MSE",
+                metric_value=global_loss_curve[-1],
+            )
 
     final_model = WetlandGCN(
         in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels

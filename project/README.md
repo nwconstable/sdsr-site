@@ -38,6 +38,7 @@ python main.py \
     --simulator-view-radius 2 \
     --simulator-comm-radius 3 \
     --simulator-step-drones \
+    --snapshot-every 5 \
     --output-dir ../results
 ```
 
@@ -49,6 +50,8 @@ python main.py \
 | `mse_evaluation.png` | Bar charts of final and mean MSE per method |
 | `greedy_path_evaluation.png` | Mean greedy-path efficiency and goal-reaching success rate across seeded starts |
 | `interruptions.json` | Separate FedAvg and gossip dropout/blackout logs keyed by training method |
+| `snapshots/fedavg/*.png` | Optional FedAvg PNGs showing the current predicted distance field over the grid with drone positions overlaid |
+| `snapshots/gossip/*.png` | Optional gossip PNGs showing the current predicted distance field over the grid with drone positions overlaid |
 
 ---
 
@@ -72,6 +75,7 @@ python main.py \
 | `--simulator-view-radius` | int | 2 | Hop radius for simulator-derived local subgraphs during FedAvg and gossip |
 | `--simulator-comm-radius` | int | 2 | Manhattan-radius communication limit for simulator-driven FedAvg uplinks and gossip exchanges |
 | `--simulator-step-drones` | flag | off | Move each drone by one in-partition grid step before each decentralized round |
+| `--snapshot-every` | int | 0 | Save simulator-state PNGs every N decentralized rounds; requires `--use-simulator-integration` |
 
 `main.py` validates CLI argument ranges before starting and emits six stage
 status updates so long experiment runs are easier to monitor. Re-running with
@@ -147,6 +151,15 @@ subgraph for the entire run.
     updates on a communication round.
 - Being out of range is treated as a topology constraint, not as a dropout or
     blackout event in `interruptions.json`.
+- If `--snapshot-every N` is enabled, the experiment writes method-specific PNG
+    snapshots under `snapshots/fedavg/` and `snapshots/gossip/` at epoch 0,
+    after every `N` decentralized rounds, and once more at the final epoch if
+    the run ends off cadence.
+- Each snapshot renders the current decentralized model's full-grid predicted
+    distance field, overlays the current drone positions, and includes the
+    method, epoch, and full-graph MSE in the title. If drone motion is disabled,
+    marker positions may stay fixed while the heatmap still changes with model
+    training.
 
 ### Modeling Notes
 

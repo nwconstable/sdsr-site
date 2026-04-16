@@ -125,6 +125,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Move drones by one partition-respecting grid step before each decentralized round.",
     )
+    parser.add_argument(
+        "--snapshot-every",
+        type=int,
+        default=0,
+        help=(
+            "Save simulator-state PNG snapshots every N decentralized rounds; "
+            "0 disables snapshot export."
+        ),
+    )
     return parser
 
 
@@ -161,6 +170,17 @@ def validate_args(args: argparse.Namespace) -> None:
     if args.K > args.grid_size:
         raise ValueError(
             f"K={args.K} must not exceed grid_size={args.grid_size} for strip partitioning"
+        )
+
+    if args.snapshot_every < 0:
+        raise ValueError(
+            f"snapshot_every must be non-negative, got {args.snapshot_every}"
+        )
+
+    if args.snapshot_every > 0 and not args.use_simulator_integration:
+        raise ValueError(
+            "snapshot_every requires --use-simulator-integration because only "
+            "simulator-backed decentralized runs have renderable drone state"
         )
 
 
@@ -249,12 +269,20 @@ def main(argv: list[str] | None = None) -> int:
             "  Simulator-driven decentralized mode enabled "
             f"(view_radius={args.simulator_view_radius}, "
             f"comm_radius={args.simulator_comm_radius}, "
-            f"move_drones={args.simulator_step_drones})"
+            f"move_drones={args.simulator_step_drones}, "
+            f"snapshot_every={args.snapshot_every})"
         )
         print(f"  Initial drone positions: {base_simulator.drone_positions()}")
         print(f"  FedAvg base station node: {base_simulator.base_station_node()}")
     else:
         print("  Simulator-driven decentralized mode disabled.")
+
+    fedavg_snapshot_dir = None
+    gossip_snapshot_dir = None
+    if args.snapshot_every > 0:
+        fedavg_snapshot_dir = output_dir / "snapshots" / "fedavg"
+        gossip_snapshot_dir = output_dir / "snapshots" / "gossip"
+        print(f"  Snapshot export enabled every {args.snapshot_every} rounds.")
 
     hidden_channels = 64
     initial_model = WetlandGCN(
@@ -285,6 +313,9 @@ def main(argv: list[str] | None = None) -> int:
         simulator_view_radius=args.simulator_view_radius,
         simulator_comm_radius=args.simulator_comm_radius,
         move_drones=args.simulator_step_drones,
+        snapshot_every=args.snapshot_every,
+        snapshot_output_dir=fedavg_snapshot_dir,
+        snapshot_method_name="FedAvg",
     )
     gossip_losses, gossip_models = train_gossip(
         data,
@@ -301,6 +332,9 @@ def main(argv: list[str] | None = None) -> int:
         simulator_view_radius=args.simulator_view_radius,
         simulator_comm_radius=args.simulator_comm_radius,
         move_drones=args.simulator_step_drones,
+        snapshot_every=args.snapshot_every,
+        snapshot_output_dir=gossip_snapshot_dir,
+        snapshot_method_name="Gossip",
     )
     print(
         f"  FedAvg final MSE: {fedavg_losses[-1]:.4f} | "

@@ -188,34 +188,78 @@ class SpatialGridSimulator:
                 f"Node {node_idx} is not in partition {drone_id}"
             )
 
-    def visualize(self, step: int, output_dir: str | Path) -> None:
-        """Save wetland heatmap + drone markers to output_dir/sim_step_NNNN.png."""
+    def visualize(
+        self,
+        step: int,
+        output_dir: str | Path,
+        title: str | None = None,
+        filename: str | None = None,
+        node_values: torch.Tensor | np.ndarray | None = None,
+        colorbar_label: str = "Wetland Level",
+        cmap: str = "Blues",
+    ) -> Path:
+        """Save a grid heatmap + drone markers and return the written PNG path."""
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         grid_data = np.zeros((self.grid_size, self.grid_size))
+        if node_values is not None:
+            values = np.asarray(torch.as_tensor(node_values).detach().cpu()).reshape(-1)
+        else:
+            values = None
+
         n_nodes = min(self.grid_size * self.grid_size, self.data.x.shape[0])
         for node in range(n_nodes):
             r, c = divmod(node, self.grid_size)
-            if self.data.x.dim() == 1:
+            if values is not None:
+                grid_data[r, c] = float(values[node])
+            elif self.data.x.dim() == 1:
                 grid_data[r, c] = self.data.x[node].item()
             else:
                 grid_data[r, c] = self.data.x[node, 0].item()
 
         fig, ax = plt.subplots(figsize=(6, 6))
-        im = ax.imshow(grid_data, cmap="Blues", origin="upper")
-        plt.colorbar(im, ax=ax, label="Wetland Level")
+        im = ax.imshow(grid_data, cmap=cmap, origin="upper")
+        plt.colorbar(im, ax=ax, label=colorbar_label)
 
         for drone_id, pos in self._positions.items():
             r, c = divmod(pos, self.grid_size)
             ax.scatter(c, r, c="red", s=80, edgecolors="black", zorder=5,
                        label=f"Drone {drone_id}")
 
-        ax.set_title(f"Simulation Step {step:04d}")
+        ax.set_title(title or f"Simulation Step {step:04d}")
         ax.legend(loc="upper right", fontsize=7)
         fig.tight_layout()
-        fig.savefig(output_dir / f"sim_step_{step:04d}.png", dpi=150)
+        image_path = output_dir / (filename or f"sim_step_{step:04d}.png")
+        fig.savefig(image_path, dpi=150)
         plt.close(fig)
+        return image_path
+
+    def save_snapshot(
+        self,
+        epoch: int,
+        output_dir: str | Path,
+        method_name: str,
+        node_values: torch.Tensor | np.ndarray | None = None,
+        metric_label: str | None = None,
+        metric_value: float | None = None,
+    ) -> Path:
+        """Save a method-labeled training snapshot for the requested epoch."""
+        method_slug = "_".join(method_name.strip().lower().split())
+        title = f"{method_name} State - Epoch {epoch:04d}"
+        if metric_label is not None and metric_value is not None:
+            title = f"{title} | {metric_label} {metric_value:.4f}"
+        return self.visualize(
+            step=epoch,
+            output_dir=output_dir,
+            title=title,
+            filename=f"{method_slug}_epoch_{epoch:04d}.png",
+            node_values=node_values,
+            colorbar_label=(
+                "Predicted Distance" if node_values is not None else "Wetland Level"
+            ),
+            cmap=("viridis" if node_values is not None else "Blues"),
+        )
 
 
 # ---------------------------------------------------------------------------
