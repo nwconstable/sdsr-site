@@ -50,8 +50,8 @@ if __name__ == "__main__":
 	# 3     PEM1A  Freshwater Emergent Wetland  1.641549   TEFLVR  ...        EM1            1  Mineral Flat  MULTIPOLYGON (((362966.94 5026694.963, 362967....
 	# 4     PEM1C  Freshwater Emergent Wetland  1.325967   TEBAVR  ...        EM1            3    Depression  MULTIPOLYGON (((371268 5027376, 371268 5027378...
 
-	#print("Saving to CSV...")
-	#gdf.to_csv(DATA_DIR / "geoWetlands.csv", index=False)
+	print("Saving to CSV...")
+	gdf.to_csv(DATA_DIR / "geoWetlands.csv", index=False)
 
 	print("Done.")
 	sys.exit(0)

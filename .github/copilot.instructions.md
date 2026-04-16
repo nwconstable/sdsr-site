@@ -107,7 +107,7 @@ NodeAgent.train_local):
 SPATIAL GRID SIMULATOR
 -----------------------------------
 
-A simulator.py module places K drones on the grid and tracks their state:
+A grid_sim.py module places K drones on the grid and tracks their state:
 
 - Drone positions: dict mapping drone_id -> node_index
 - Drones observe their local neighbourhood (subgraph around position)
@@ -131,12 +131,13 @@ Synthetic graph construction:
 EVALUATION
 -----------------------------------
 
-- Compute MSE vs centralized baseline
+- Compute MSE vs the ground-truth Dijkstra distance labels for each method
+- Treat centralized training as a comparison reference in reports, not as the regression target
 - Measure convergence over time
 - Optional:
     simulate greedy path:
-        from random start, move to neighbor with lowest predicted distance
-    evaluate path efficiency vs optimal
+    from multiple random starts, move to neighbor with lowest predicted distance
+  evaluate path efficiency and goal-reaching success rate vs optimal
 
 -----------------------------------
 IMPORTANT
@@ -150,7 +151,24 @@ Keep everything small and simple:
 Focus on training dynamics, not model complexity.
 
 -----------------------------------
+MAINTENANCE RULES
+-----------------------------------
+
+1. **Always update `project/README.md`** after any change to source files,
+   module status, CLI arguments, or dependencies.  The README is the
+   human-facing reference for running and understanding the project.
+
+2. **`issues.md` is the canonical task tracker.**  Every new feature,
+   bug, or TODO must be filed there as a numbered issue with full context,
+   function signatures, and a verifiable acceptance checklist.
+   `copilot-next.instructions.md` is deprecated — do not update it;
+   `issues.md` supersedes it entirely.
+
+-----------------------------------
 NEXT STEP
 -----------------------------------
 
-See copilot-next.instructions.md
+See `.github/issues.md` for the current implementation backlog.
+Issues are ordered by dependency.  The next unfinished issue is the
+correct starting point.  Update the issue's acceptance checklist and
+add ✓ DONE to the heading when complete.

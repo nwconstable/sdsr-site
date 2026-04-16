@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 import sys
 from typing import Any, Dict, List, Optional, Union
 import uuid
@@ -14,8 +15,62 @@ from torch_geometric.data import Data
 from torch_geometric.utils import subgraph
 
 from comms import CommunicationChannel
+from grid_sim import SpatialGridSimulator
 from model import WetlandGCN
 from partition import build_local_subgraph
+
+
+def _clone_state_dict(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    return {key: value.detach().clone() for key, value in state_dict.items()}
+
+
+def _average_state_dicts(
+    state_dicts: List[Dict[str, torch.Tensor]],
+) -> Dict[str, torch.Tensor]:
+    avg_state: Dict[str, torch.Tensor] = {}
+    for key in state_dicts[0]:
+        acc = state_dicts[0][key].detach().float().clone()
+        for state_dict in state_dicts[1:]:
+            acc += state_dict[key].detach().float()
+        avg_state[key] = acc / len(state_dicts)
+    return avg_state
+
+
+def _evaluate_state_dict(
+    data: Data,
+    state_dict: Dict[str, torch.Tensor],
+    hidden_channels: int,
+) -> float:
+    eval_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    eval_model.load_state_dict(state_dict)
+    eval_model.eval()
+    with torch.no_grad():
+        out = eval_model(data.x, data.edge_index)
+        return F.mse_loss(out, data.y).item()
+
+
+def _predict_state_dict(
+    data: Data,
+    state_dict: Dict[str, torch.Tensor],
+    hidden_channels: int,
+) -> torch.Tensor:
+    eval_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    eval_model.load_state_dict(state_dict)
+    eval_model.eval()
+    with torch.no_grad():
+        return eval_model(data.x, data.edge_index).detach().cpu().reshape(-1)
+
+
+def _should_save_snapshot(epoch: int, total_epochs: int, snapshot_every: int) -> bool:
+    if snapshot_every <= 0:
+        return False
+    if epoch == 0 or epoch == total_epochs:
+        return True
+    return epoch % snapshot_every == 0
 
 #
 # Node Agent Class
@@ -42,7 +97,9 @@ class NodeAgent:
         self.model_params = {}
 
     # Grab a subset of the graph for training
-    def _select_local_subset(self, data: Data, location: Optional[int], radius: int) -> torch.Tensor:
+    def _select_local_subset(
+        self, data: Data, location: Optional[int], radius: int
+    ) -> tuple[int, torch.Tensor]:
         """
         data: Full graph data object
         location: Node index to center the local subset around (drone location)
@@ -83,6 +140,8 @@ class NodeAgent:
         lr: float = 1e-3,
         num_threads: int = 4,
         time_budget_ms: int | None = None,
+        use_full_graph: bool = False,
+        hidden_channels: int = 64,
     ) -> Dict[str, torch.Tensor]:
         """
         training_data  : Full graph data object (PyG Data or compatible dict)
@@ -109,14 +168,24 @@ class NodeAgent:
             "num_nodes": training_data.num_nodes,
         }
 
-        # Select local subset of the graph based on location and radius (recall default is self.current_loc)
-        location, subset_idx = self._select_local_subset(training_data, location, radius)
+        if use_full_graph:
+            sub_edge_index = training_data.edge_index
+            sub_x = training_data.x
+            sub_y = training_data.y
+            trained_nodes = training_data.num_nodes
+        else:
+            location, subset_idx = self._select_local_subset(training_data, location, radius)
+            sub_edge_index, _ = subgraph(
+                subset_idx,
+                training_data.edge_index,
+                relabel_nodes=True,
+                num_nodes=training_data.num_nodes,
+            )
+            sub_x = training_data.x[subset_idx]
+            sub_y = training_data.y[subset_idx]
+            trained_nodes = len(subset_idx)
 
-        sub_edge_index, _ = subgraph(subset_idx, training_data.edge_index, relabel_nodes=True, num_nodes=training_data.num_nodes)
-        sub_x = training_data.x[subset_idx]
-        sub_y = training_data.y[subset_idx]
-
-        model = WetlandGCN(hidden_channels=32)
+        model = WetlandGCN(in_channels=int(sub_x.shape[1]), hidden_channels=hidden_channels)
         if self.model_params:  # initialise from last broadcast weights if available
             model.load_state_dict(self.model_params)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -145,7 +214,7 @@ class NodeAgent:
 
         self.local_data.update(
         {
-            "trained_nodes": len(subset_idx),
+            "trained_nodes": trained_nodes,
             "location": location,
             "last_loss": losses[-1] if losses else None,
             "loss_curve": losses,
@@ -155,9 +224,9 @@ class NodeAgent:
 
         return self.model_params
     
-    def receive_global_params(self, global_params: Dict[str, float]) -> None:
+    def receive_global_params(self, global_params: Dict[str, torch.Tensor]) -> None:
         """Receive and update global parameters from central agent"""
-        self.model_params = global_params.copy()
+        self.model_params = _clone_state_dict(global_params)
     
     def send_local_update(self) -> Dict[str, Any]:
         """Send local model update to central agent"""
@@ -175,7 +244,7 @@ class CentralAgent:
     """Central coordinator agent in federated environment"""
     agent_id: str
     nodes: List[NodeAgent]
-    global_params: Dict[str, float]
+    global_params: Dict[str, torch.Tensor]
     
     def __init__(self):
         self.agent_id = "central_" + str(uuid.uuid4())[:8]
@@ -186,20 +255,23 @@ class CentralAgent:
         """Register a new node agent"""
         self.nodes.append(node)
     
-    def aggregate_updates(self, updates: List[Dict[str, Any]]) -> Dict[str, float]:
+    def aggregate_updates(self, updates: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
         """Aggregate updates from all nodes using federated averaging"""
         if not updates:
             return self.global_params
         
         total_data_size = sum(u["data_size"] for u in updates)
-        aggregated = {}
+        aggregated = {
+            key: value.detach().clone().float() * 0.0
+            for key, value in updates[0]["params"].items()
+        }
         
         for update in updates:
             # Presumes weight is proportional to the amount of data used for training at that node
             weight = update["data_size"] / total_data_size
 
             for key, value in update["params"].items():
-                aggregated[key] = aggregated.get(key, 0) + value * weight
+                aggregated[key] += value.detach().float() * weight
         
         self.global_params = aggregated
 
@@ -222,57 +294,125 @@ def train_fedavg(
     lr: float = 1e-3,
     num_threads: int = 4,
     time_budget_ms: int | None = None,
+    initial_state_dict: Dict[str, torch.Tensor] | None = None,
+    hidden_channels: int = 64,
+    simulator: SpatialGridSimulator | None = None,
+    simulator_view_radius: int = 2,
+    simulator_comm_radius: int = 2,
+    move_drones: bool = False,
+    snapshot_every: int = 0,
+    snapshot_output_dir: str | Path | None = None,
+    snapshot_method_name: str = "FedAvg",
 ) -> tuple[list[float], WetlandGCN]:
     """
     data           : Full graph data object
     partitions     : List of node index arrays for each partition
-    channel        : CommunicationChannel — governs comm schedule and dropout (yet to be implemented)
-    epochs         : Number of global training rounds
+    channel        : CommunicationChannel — governs communication schedule and dropout
+    epochs         : Number of local-training epochs
     local_steps    : Max gradient steps each node takes locally per round
     lr             : Learning rate for local training
     num_threads    : PyTorch CPU thread count per node (default 4 = Jetson Nano class)
     time_budget_ms : Wall-clock ms budget for each node's gradient loop; None = no limit
     """
+    if initial_state_dict is None:
+        template_model = WetlandGCN(
+            in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+        )
+        initial_state_dict = _clone_state_dict(template_model.state_dict())
+
     central = CentralAgent()
     nodes = [NodeAgent(node_id=f"node_{i}") for i in range(len(partitions))]
     for node in nodes:
         central.register_node(node)
 
+    central.global_params = _clone_state_dict(initial_state_dict)
+    central.broadcast_params()
+    use_simulator = simulator is not None
+    if snapshot_every > 0 and not use_simulator:
+        raise ValueError("Snapshot export requires a simulator-backed FedAvg run.")
+    if snapshot_every > 0 and snapshot_output_dir is None:
+        raise ValueError("snapshot_output_dir is required when snapshot_every > 0.")
+    local_partitions = None
+    if not use_simulator:
+        local_partitions = [build_local_subgraph(data, partition) for partition in partitions]
+
     global_loss_curve: list[float] = []
 
+    if use_simulator and _should_save_snapshot(0, epochs, snapshot_every):
+        simulator.save_snapshot(
+            epoch=0,
+            output_dir=snapshot_output_dir,
+            method_name=snapshot_method_name,
+            node_values=_predict_state_dict(data, central.global_params, hidden_channels),
+            metric_label="MSE",
+            metric_value=_evaluate_state_dict(data, central.global_params, hidden_channels),
+        )
+
     for epoch in range(epochs):
-        print(f"Epoch {epoch + 1}/{epochs}")
+        if use_simulator and move_drones:
+            simulator.step_drones()
+
+        drone_positions = simulator.drone_positions() if use_simulator else {}
 
         # Each node trains locally on its partition
         for i, node in enumerate(nodes):
-            partition_data = build_local_subgraph(data, partitions[i])
+            if use_simulator:
+                node.current_loc = drone_positions.get(i)
+                local_training_view = simulator.get_local_view(
+                    i, radius=simulator_view_radius
+                )
+            else:
+                local_training_view = local_partitions[i]
+
             node.train_local(
-                partition_data, epochs=local_steps, lr=lr,
-                num_threads=num_threads, time_budget_ms=time_budget_ms,
+                local_training_view,
+                location=None if use_simulator else node.current_loc,
+                radius=simulator_view_radius,
+                epochs=local_steps,
+                lr=lr,
+                num_threads=num_threads,
+                time_budget_ms=time_budget_ms,
+                use_full_graph=True,
+                hidden_channels=hidden_channels,
             )
 
-        # Apply dropout: only participating nodes contribute to this round
-        participant_ids = channel.sample_participants(list(range(len(nodes))))
-        updates = [nodes[i].send_local_update() for i in participant_ids]
+        if channel.is_comm_round(epoch):
+            if use_simulator:
+                participant_ids = channel.sample_participants(
+                    simulator.drones_within_radius(
+                        simulator.base_station_node(),
+                        simulator_comm_radius,
+                        drone_ids=list(range(len(nodes))),
+                    )
+                )
+            else:
+                participant_ids = channel.sample_participants(list(range(len(nodes))))
+            updates = [nodes[i].send_local_update() for i in participant_ids]
 
-        if updates:
-            central.aggregate_updates(updates)
-            central.broadcast_params()  # broadcast to ALL nodes, not just participants
+            if updates:
+                central.aggregate_updates(updates)
+                central.broadcast_params()
 
-        # Evaluate global model on full graph
-        if central.global_params:
-            eval_model = WetlandGCN(hidden_channels=32)
-            eval_model.load_state_dict(central.global_params)
-            eval_model.eval()
-            with torch.no_grad():
-                out = eval_model(data.x, data.edge_index)
-                mse = F.mse_loss(out, data.y).item()
-            global_loss_curve.append(mse)
+        avg_state = _average_state_dicts([node.model_params for node in nodes])
+        global_loss_curve.append(_evaluate_state_dict(data, avg_state, hidden_channels))
 
-    final_model = WetlandGCN(hidden_channels=32)
+        completed_rounds = epoch + 1
+        if use_simulator and _should_save_snapshot(
+            completed_rounds, epochs, snapshot_every
+        ):
+            simulator.save_snapshot(
+                epoch=completed_rounds,
+                output_dir=snapshot_output_dir,
+                method_name=snapshot_method_name,
+                node_values=_predict_state_dict(data, avg_state, hidden_channels),
+                metric_label="MSE",
+                metric_value=global_loss_curve[-1],
+            )
 
-    if central.global_params:
-        final_model.load_state_dict(central.global_params)
+    final_model = WetlandGCN(
+        in_channels=int(data.x.shape[1]), hidden_channels=hidden_channels
+    )
+    final_model.load_state_dict(avg_state)
 
     return global_loss_curve, final_model
 

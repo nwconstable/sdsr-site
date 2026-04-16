@@ -1,134 +1,340 @@
+"""
+grid_sim.py
+
+Spatial grid simulator for the wetlands GNN experiment.
+
+Classes
+-------
+SpatialGridSimulator : Place K drones on a grid, simulate movement, visualise.
+"""
+
+from __future__ import annotations
+
+import random
 import sys
+from pathlib import Path
+from typing import Iterable
 
 import numpy as np
-from pathlib import Path
-
 import torch
-from partition import partition_nodes
 import matplotlib.pyplot as plt
 from torch_geometric.data import Data
-from torch_geometric.loader import NeighborLoader
 
-# Assuming Data is a torch_geometric.data.Data instance with node features in data.x
+from partition import partition_nodes, build_local_subgraph
+
 
 class SpatialGridSimulator:
-    def __init__(self, grid_size: int, partitions: list[np.ndarray], data: Data):
+    """Place K drones on a square grid and simulate their movement.
+
+    Parameters
+    ----------
+    grid_size  : side length of the square grid  (total nodes = grid_size**2)
+    partitions : list of K global node-index arrays (output of partition_nodes)
+    data       : full PyG Data object (x, edge_index, y)
+
+    Attributes
+    ----------
+    drone_positions() : dict[int, int] — drone_id -> current node index
+    """
+
+    def __init__(
+        self,
+        grid_size: int,
+        partitions: list[np.ndarray],
+        data: Data,
+        seed: int | None = None,
+        positions: dict[int, int] | None = None,
+    ) -> None:
         self.grid_size = grid_size
         self.partitions = partitions
         self.data = data
-        self.drone_positions = {}  # dict[int, int]: drone_id -> node index
+        self._rng = random.Random(seed)
+        self._base_station = (grid_size // 2) * grid_size + (grid_size // 2)
 
-        for drone_id, part in enumerate(partitions):
-            if len(part) > 0:
-                self.drone_positions[drone_id] = int(np.mean(part))
+        # Precomputed partition membership sets for O(1) lookup
+        self._partition_sets: list[set[int]] = [
+            set(p.tolist()) for p in partitions
+        ]
+
+        self._positions: dict[int, int] = {}
+        if positions is not None:
+            for drone_id, node_idx in positions.items():
+                self._validate_position(drone_id, node_idx)
+                self._positions[int(drone_id)] = int(node_idx)
+        else:
+            # Initial position = the actual node closest to the numeric centroid
+            for drone_id, part in enumerate(partitions):
+                if len(part) > 0:
+                    centroid = float(np.mean(part))
+                    closest = int(part[np.argmin(np.abs(part.astype(float) - centroid))])
+                    self._positions[drone_id] = closest
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
     def drone_positions(self) -> dict[int, int]:
-        return self.drone_positions.copy()
+        """Return a copy of the current drone_id -> node_index mapping."""
+        return self._positions.copy()
 
-    def step_drones(self):
-        for drone_id in self.drone_positions.keys():
-            # Use NeighborLoader to sample neighbors from the drone's partition
-            neighbor_loader = NeighborLoader(
-                data=self.data, # Sampling from each drone's partition only
-                num_neighbors=4, # Sample up to 4 neighbors for each drone
-                batch_size=20, # Needs adjusting?
-                input_nodes=torch.tensor([self.drone_positions[drone_id]]).to_sparse() # Starting position of the drone
-            )
+    def clone(self) -> SpatialGridSimulator:
+        """Return a simulator copy with the same positions and RNG state."""
+        cloned = SpatialGridSimulator(
+            self.grid_size,
+            self.partitions,
+            self.data,
+            positions=self._positions.copy(),
+        )
+        cloned._rng.setstate(self._rng.getstate())
+        return cloned
 
-            neighbor_data = next(iter(neighbor_loader))
-            visitable_nodes = neighbor_data.n_id.numpy()
+    def base_station_node(self) -> int:
+        """Return the fixed base-station node used for FedAvg reachability."""
+        return self._base_station
 
-            # Get the first sampled node that is in the drone's partition
-            for node in visitable_nodes:
-                if node in self.partitions[drone_id]:
-                    self.drone_positions[drone_id] = node
-                    break
+    def drones_within_radius(
+        self,
+        center_node: int,
+        radius: int,
+        drone_ids: Iterable[int] | None = None,
+    ) -> list[int]:
+        """Return drones whose current positions are within *radius* hops."""
+        if radius < 0:
+            raise ValueError(f"radius must be non-negative, got {radius}")
+        if drone_ids is None:
+            drone_ids = self._positions.keys()
+        center_row, center_col = divmod(center_node, self.grid_size)
+        reachable: list[int] = []
+        for drone_id in drone_ids:
+            pos = self._positions[int(drone_id)]
+            row, col = divmod(pos, self.grid_size)
+            if abs(row - center_row) + abs(col - center_col) <= radius:
+                reachable.append(int(drone_id))
+        return sorted(reachable)
+
+    def proximity_pairs(
+        self,
+        radius: int,
+        drone_ids: Iterable[int] | None = None,
+    ) -> list[tuple[int, int]]:
+        """Return all drone pairs whose positions are within *radius* hops."""
+        if radius < 0:
+            raise ValueError(f"radius must be non-negative, got {radius}")
+        source_ids = self._positions.keys() if drone_ids is None else drone_ids
+        ids = sorted(int(drone_id) for drone_id in source_ids)
+        pairs: list[tuple[int, int]] = []
+        for idx, left in enumerate(ids):
+            left_pos = self._positions[left]
+            left_row, left_col = divmod(left_pos, self.grid_size)
+            for right in ids[idx + 1:]:
+                right_pos = self._positions[right]
+                right_row, right_col = divmod(right_pos, self.grid_size)
+                if abs(left_row - right_row) + abs(left_col - right_col) <= radius:
+                    pairs.append((left, right))
+        return pairs
+
+    def step_drones(self) -> None:
+        """Move each drone to a random adjacent node within its partition.
+
+        Uses 4-neighbour (N/S/E/W) grid adjacency and only considers nodes
+        that belong to the drone's own partition.  If no valid neighbour
+        exists (drone is at a partition boundary with no in-partition
+        neighbours) the drone stays in place.
+        """
+        for drone_id, pos in list(self._positions.items()):
+            row, col = divmod(pos, self.grid_size)
+            candidates: list[int] = []
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = row + dr, col + dc
+                if 0 <= nr < self.grid_size and 0 <= nc < self.grid_size:
+                    neighbor = nr * self.grid_size + nc
+                    if neighbor in self._partition_sets[drone_id]:
+                        candidates.append(neighbor)
+            if candidates:
+                self._positions[drone_id] = self._rng.choice(candidates)
 
     def get_local_view(self, drone_id: int, radius: int = 1) -> Data:
-        # Get all nodes within 'radius' hops of the drone's current position
-        pos = self.drone_positions[drone_id]
+        """Return a PyG Data subgraph of nodes within *radius* hops of the drone.
 
-        # Use NeighborLoader to sample neighbors from the drone's current position
-        neighbor_loader = NeighborLoader(
-            data=self.data,
-            num_neighbors=4,
-            batch_size=20, # Needs adjusting?
-            input_nodes=pos # Starting from the current node
-        )
+        Expands outward via BFS over the 4-neighbour grid for exactly *radius*
+        hops.  No partition constraint is applied (the drone can see beyond its
+        own partition boundary).
+        """
+        pos = self._positions[drone_id]
+        visited: set[int] = {pos}
+        frontier: set[int] = {pos}
 
-        # Initialize all immediate neighbors
-        neighbor_data = next(iter(neighbor_loader))
+        for _ in range(radius):
+            next_frontier: set[int] = set()
+            for node in frontier:
+                r, c = divmod(node, self.grid_size)
+                for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < self.grid_size and 0 <= nc < self.grid_size:
+                        neighbor = nr * self.grid_size + nc
+                        if neighbor not in visited:
+                            next_frontier.add(neighbor)
+                            visited.add(neighbor)
+            frontier = next_frontier
 
-        # Iterate until we reach the desired radius
-        for _ in range(radius - 1):
-            neighbor_data = next(iter(neighbor_loader))
+        node_indices = np.array(sorted(visited), dtype=np.int64)
+        return build_local_subgraph(self.data, node_indices)
 
-        # Return the neighbor data as the local view for the drone
-        return neighbor_data
+    def _validate_position(self, drone_id: int, node_idx: int) -> None:
+        if drone_id < 0 or drone_id >= len(self.partitions):
+            raise ValueError(f"Unknown drone_id {drone_id}")
+        if node_idx not in self._partition_sets[drone_id]:
+            raise ValueError(
+                f"Node {node_idx} is not in partition {drone_id}"
+            )
 
-    def visualize(self, step: int, output_dir: str | Path):
+    def visualize(
+        self,
+        step: int,
+        output_dir: str | Path,
+        title: str | None = None,
+        filename: str | None = None,
+        node_values: torch.Tensor | np.ndarray | None = None,
+        colorbar_label: str = "Wetland Level",
+        cmap: str = "Blues",
+    ) -> Path:
+        """Save a grid heatmap + drone markers and return the written PNG path."""
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        fig, ax = plt.subplots()
-
         grid_data = np.zeros((self.grid_size, self.grid_size))
+        if node_values is not None:
+            values = np.asarray(torch.as_tensor(node_values).detach().cpu()).reshape(-1)
+        else:
+            values = None
 
-        # Not sure if this is citing the grid data corectly
-        for node in range(self.grid_size * self.grid_size):
-            i, j = divmod(node, self.grid_size)
-            grid_data[i, j] = self.data.x[node].item() if (node < self.data.x.shape[0]) else 0.0
+        n_nodes = min(self.grid_size * self.grid_size, self.data.x.shape[0])
+        for node in range(n_nodes):
+            r, c = divmod(node, self.grid_size)
+            if values is not None:
+                grid_data[r, c] = float(values[node])
+            elif self.data.x.dim() == 1:
+                grid_data[r, c] = self.data.x[node].item()
+            else:
+                grid_data[r, c] = self.data.x[node, 0].item()
 
-        im = ax.imshow(grid_data, cmap='Blues', origin='upper')
+        fig, ax = plt.subplots(figsize=(6, 6))
+        im = ax.imshow(grid_data, cmap=cmap, origin="upper")
+        plt.colorbar(im, ax=ax, label=colorbar_label)
 
-        for drone_id, pos in self.drone_positions.items():
-            i, j = divmod(pos, self.grid_size)
-            ax.scatter(j, i, c='red', s=50, edgecolors='black')
+        for drone_id, pos in self._positions.items():
+            r, c = divmod(pos, self.grid_size)
+            ax.scatter(c, r, c="red", s=80, edgecolors="black", zorder=5,
+                       label=f"Drone {drone_id}")
 
-        plt.colorbar(im, label='Wetland Level')
-        plt.title(f'Simulation Step {step}')
-        plt.savefig(output_dir / f'sim_step_{step:04d}.png')
-        plt.close()
+        ax.set_title(title or f"Simulation Step {step:04d}")
+        ax.legend(loc="upper right", fontsize=7)
+        fig.tight_layout()
+        image_path = output_dir / (filename or f"sim_step_{step:04d}.png")
+        fig.savefig(image_path, dpi=150)
+        plt.close(fig)
+        return image_path
+
+    def save_snapshot(
+        self,
+        epoch: int,
+        output_dir: str | Path,
+        method_name: str,
+        node_values: torch.Tensor | np.ndarray | None = None,
+        metric_label: str | None = None,
+        metric_value: float | None = None,
+    ) -> Path:
+        """Save a method-labeled training snapshot for the requested epoch."""
+        method_slug = "_".join(method_name.strip().lower().split())
+        title = f"{method_name} State - Epoch {epoch:04d}"
+        if metric_label is not None and metric_value is not None:
+            title = f"{title} | {metric_label} {metric_value:.4f}"
+        return self.visualize(
+            step=epoch,
+            output_dir=output_dir,
+            title=title,
+            filename=f"{method_slug}_epoch_{epoch:04d}.png",
+            node_values=node_values,
+            colorbar_label=(
+                "Predicted Distance" if node_values is not None else "Wetland Level"
+            ),
+            cmap=("viridis" if node_values is not None else "Blues"),
+        )
+
 
 # ---------------------------------------------------------------------------
-# Grid Simulator Debugging
+# CLI smoke test
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import torch
+    GRID_SIZE = 10
+    K = 4
+    OUTPUT_DIR = Path(__file__).resolve().parent.parent / "results" / "sim"
 
-    GRID_SIZE = 50
-    K = 5
+    # Build a synthetic 10x10 graph — no GeoPackage needed
+    N = GRID_SIZE * GRID_SIZE
+    src_list, dst_list = [], []
+    for r in range(GRID_SIZE):
+        for c in range(GRID_SIZE):
+            u = r * GRID_SIZE + c
+            for dr, dc in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < GRID_SIZE and 0 <= nc < GRID_SIZE:
+                    src_list.append(u)
+                    dst_list.append(nr * GRID_SIZE + nc)
+    edge_index = torch.tensor([src_list, dst_list], dtype=torch.long)
+    x = torch.rand(N, 1)
+    y = torch.arange(N, dtype=torch.float).unsqueeze(1)
+    data = Data(x=x, edge_index=edge_index, y=y, grid_size=GRID_SIZE)
 
-    debug_dir = Path("__file__").resolve().parent.parent / "data/DebugResults"
-    sample_mfile = debug_dir / "sample_data.pth"
+    partitions = partition_nodes(GRID_SIZE, K)
+    simulator = SpatialGridSimulator(GRID_SIZE, partitions, data)
 
-    print(f"Checking for debug directory and sample data file in \"{debug_dir}\"...")
+    print(f"Initial drone positions: {simulator.drone_positions()}")
 
-    if not debug_dir.exists():
-        print("Creating debug directory for grid simulator results...")
-        debug_dir.mkdir(parents=True, exist_ok=True)
+    # Run 3 steps, save images
+    for step in range(3):
+        simulator.visualize(step, OUTPUT_DIR)
+        simulator.step_drones()
+        print(f"  Step {step + 1}: {simulator.drone_positions()}")
 
-    if sample_mfile.exists():
-        print(f"Loading sample data from \"{sample_mfile}\"...")
-        data = torch.load(sample_mfile, weights_only=False)
-    else:
-        from partition import partition_nodes
-        from build_graph import build_pyg_data
-        from load_data import load_gdf
+    print(f"\n3 step images saved to {OUTPUT_DIR}")
 
-        gdf = load_gdf()
-        data, goal = build_pyg_data(gdf, grid_size=GRID_SIZE, seed=42)
+    # Verify get_local_view returns valid PyG Data
+    view = simulator.get_local_view(0, radius=2)
+    assert view.x is not None, "Local view missing x"
+    assert view.edge_index is not None, "Local view missing edge_index"
+    print(f"Local view (drone 0, radius=2): {view.num_nodes} nodes")
 
-        torch.save(data, sample_mfile)
-    
-    for grid_size in range(10, GRID_SIZE + 1, 10):
-        for k in range(2, K + 1):
-            partitions = partition_nodes(grid_size=grid_size, K=k)
+    # Verify partition constraints hold across K and grid_size values
+    print("\nChecking K in {2,3,4,5} and grid_size in {10,50} ...")
+    for gs in (10, 50):
+        n = gs * gs
+        # Minimal synthetic graph (edges not needed for position checks)
+        test_ei = torch.zeros(2, 0, dtype=torch.long)
+        test_data = Data(
+            x=torch.rand(n, 1),
+            edge_index=test_ei,
+            y=torch.zeros(n, 1),
+            grid_size=gs,
+        )
+        for k in (2, 3, 4, 5):
+            parts = partition_nodes(gs, k)
+            sim = SpatialGridSimulator(gs, parts, test_data)
+            pos = sim.drone_positions()
+            assert len(pos) == k, f"Expected {k} drones, got {len(pos)}"
+            for did in range(k):
+                assert pos[did] in set(parts[did].tolist()), (
+                    f"Initial pos {pos[did]} not in partition {did}"
+                )
+            # Step once and verify positions stay in partition
+            sim.step_drones()
+            new_pos = sim.drone_positions()
+            for did in range(k):
+                assert new_pos[did] in set(parts[did].tolist()), (
+                    f"After step, pos {new_pos[did]} escaped partition {did}"
+                )
+    print("  All checks passed.")
 
-            # Initialize the simulator
-            simulator = SpatialGridSimulator(GRID_SIZE, partitions, data)
-
-            for step in range(5):
-                simulator.visualize(step, output_dir=debug_dir)
-                simulator.step_drones()
+    print("\ngrid_sim.py smoke test passed.")
+    sys.exit(0)

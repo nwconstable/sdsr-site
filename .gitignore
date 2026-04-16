@@ -1,3 +1,7 @@
 project/data/*
 project/src/__pycache__
 project/images/*
+project/results/*
+project/src/project/results/*
+**/snapshots/*
+**/*_smoke/*
