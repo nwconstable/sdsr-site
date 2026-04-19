@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "tasks": {
+    "task-03ebb28bf1cd099e": {
+      "metadata": "task-03ebb28bf1cd099e\\metadata.json",
+      "sampling": {
+        "anchor_mode": "wetland-feature",
+        "attempt_index": 0,
+        "max_attempts": 50,
+        "min_feature_count": 1,
+        "min_total_wetland_area": 2.0,
+        "sampler_version": "v2-axis-window-2",
+        "seed": 7,
+        "window_height_fraction": null,
+        "window_height_m": 100.0,
+        "window_size_mode": "meters",
+        "window_width_fraction": null,
+        "window_width_m": 100.0
+      },
+      "source_dataset": {
+        "crs": "EPSG:26915",
+        "feature_count": 2372223,
+        "layer": "statewide_NWI",
+        "path": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\data\\water_nat_wetlands_inv_2009-2014.gpkg",
+        "total_bounds": [
+          187837.7455000002,
+          4809397.7117,
+          762634.7822000002,
+          5478643.659
+        ]
+      },
+      "spec_fingerprint": "03ebb28bf1cd099ec4c5b366e97c5842ef73b3b18011633f49c98779861e2d70",
+      "summary": {
+        "feature_count": 3,
+        "total_wetland_area": 3613.419511135845,
+        "wetland_area_fraction": 0.36134195111358447,
+        "window_area": 10000.0
+      },
+      "task_dir": "task-03ebb28bf1cd099e",
+      "task_id": "task-03ebb28bf1cd099e",
+      "window": {
+        "bounds": [
+          668433.31985,
+          5325548.5665,
+          668533.31985,
+          5325648.5665
+        ],
+        "height": 100.0,
+        "width": 100.0
+      },
+      "window_geojson": "task-03ebb28bf1cd099e\\window.geojson"
+    },
+    "task-898ead56d6c816cd": {
+      "metadata": "task-898ead56d6c816cd\\metadata.json",
+      "sampling": {
+        "anchor_mode": "wetland-feature",
+        "attempt_index": 0,
+        "max_attempts": 50,
+        "min_feature_count": 1,
+        "min_total_wetland_area": 2.0,
+        "sampler_version": "v2-axis-window-2",
+        "seed": 8,
+        "window_height_fraction": null,
+        "window_height_m": 100.0,
+        "window_size_mode": "meters",
+        "window_width_fraction": null,
+        "window_width_m": 100.0
+      },
+      "source_dataset": {
+        "crs": "EPSG:26915",
+        "feature_count": 2372223,
+        "layer": "statewide_NWI",
+        "path": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\data\\water_nat_wetlands_inv_2009-2014.gpkg",
+        "total_bounds": [
+          187837.7455000002,
+          4809397.7117,
+          762634.7822000002,
+          5478643.659
+        ]
+      },
+      "spec_fingerprint": "898ead56d6c816cdeb34407457412a1745880e679e184136b2e5388a582e99a3",
+      "summary": {
+        "feature_count": 2,
+        "total_wetland_area": 966.7990415079965,
+        "wetland_area_fraction": 0.09667990415079966,
+        "window_area": 10000.0
+      },
+      "task_dir": "task-898ead56d6c816cd",
+      "task_id": "task-898ead56d6c816cd",
+      "window": {
+        "bounds": [
+          435671.6082172325,
+          5004808.19375,
+          435771.6082172325,
+          5004908.19375
+        ],
+        "height": 100.0,
+        "width": 100.0
+      },
+      "window_geojson": "task-898ead56d6c816cd\\window.geojson"
+    },
+    "task-b5ec54659b5bd3fb": {
+      "metadata": "task-b5ec54659b5bd3fb\\metadata.json",
+      "sampling": {
+        "anchor_mode": "wetland-feature",
+        "attempt_index": 0,
+        "max_attempts": 5,
+        "min_feature_count": 1,
+        "min_total_wetland_area": 1.0,
+        "sampler_version": "v2-axis-window-2",
+        "seed": 7,
+        "window_height_fraction": null,
+        "window_height_m": 500.0,
+        "window_size_mode": "meters",
+        "window_width_fraction": null,
+        "window_width_m": 500.0
+      },
+      "source_dataset": {
+        "crs": "EPSG:26915",
+        "feature_count": 2372223,
+        "layer": "statewide_NWI",
+        "path": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\data\\water_nat_wetlands_inv_2009-2014.gpkg",
+        "total_bounds": [
+          187837.7455000002,
+          4809397.7117,
+          762634.7822000002,
+          5478643.659
+        ]
+      },
+      "spec_fingerprint": "b5ec54659b5bd3fba5d453a541199d5a8ad194992ce5e746e0a946cf74d5a822",
+      "summary": {
+        "feature_count": 25,
+        "total_wetland_area": 85066.27398924743,
+        "wetland_area_fraction": 0.3402650959569897,
+        "window_area": 250000.0
+      },
+      "task_dir": "task-b5ec54659b5bd3fb",
+      "task_id": "task-b5ec54659b5bd3fb",
+      "window": {
+        "bounds": [
+          668233.31985,
+          5325348.5665,
+          668733.31985,
+          5325848.5665
+        ],
+        "height": 500.0,
+        "width": 500.0
+      },
+      "window_geojson": "task-b5ec54659b5bd3fb\\window.geojson"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "anchor": {
+    "feature_point": {
+      "x": 668483.31985,
+      "y": 5325598.5665
+    },
+    "feature_source_index": "1358253",
+    "mode": "wetland-feature",
+    "window_size_mode": "meters"
+  },
+  "artifacts": {
+    "metadata": "metadata.json",
+    "window_geojson": "window.geojson"
+  },
+  "sampler_version": "v2-axis-window-2",
+  "sampling": {
+    "anchor_mode": "wetland-feature",
+    "attempt_index": 0,
+    "max_attempts": 5,
+    "min_feature_count": 1,
+    "min_total_wetland_area": 1.0,
+    "sampler_version": "v2-axis-window-2",
+    "seed": 7,
+    "window_height_fraction": null,
+    "window_height_m": 500.0,
+    "window_size_mode": "meters",
+    "window_width_fraction": null,
+    "window_width_m": 500.0
+  },
+  "schema_version": 1,
+  "source_dataset": {
+    "crs": "EPSG:26915",
+    "feature_count": 2372223,
+    "layer": "statewide_NWI",
+    "path": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\data\\water_nat_wetlands_inv_2009-2014.gpkg",
+    "total_bounds": [
+      187837.7455000002,
+      4809397.7117,
+      762634.7822000002,
+      5478643.659
+    ]
+  },
+  "spec_fingerprint": "b5ec54659b5bd3fba5d453a541199d5a8ad194992ce5e746e0a946cf74d5a822",
+  "summary": {
+    "feature_count": 25,
+    "total_wetland_area": 85066.27398924743,
+    "wetland_area_fraction": 0.3402650959569897,
+    "window_area": 250000.0
+  },
+  "task_id": "task-b5ec54659b5bd3fb",
+  "window": {
+    "bounds": [
+      668233.31985,
+      5325348.5665,
+      668733.31985,
+      5325848.5665
+    ],
+    "height": 500.0,
+    "width": 500.0
+  }
+}

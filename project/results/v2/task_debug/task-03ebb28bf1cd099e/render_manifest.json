@@ -1,0 +1,32 @@
+{
+  "attributes": {
+    "COW_CLASS1": {
+      "category_count": 3,
+      "image_path": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\results\\v2\\task_debug\\task-03ebb28bf1cd099e\\cow_class1.png",
+      "requested_attribute": "COW_CLASS1",
+      "resolved_column": "cow_class1",
+      "status": "rendered",
+      "top_categories": [
+        "FO",
+        "EM1",
+        "SS"
+      ]
+    },
+    "SPCC_DESC": {
+      "category_count": 3,
+      "image_path": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\results\\v2\\task_debug\\task-03ebb28bf1cd099e\\spcc_desc.png",
+      "requested_attribute": "SPCC_DESC",
+      "resolved_column": "spcc_desc",
+      "status": "rendered",
+      "top_categories": [
+        "Coniferous Bog",
+        "Shallow Marsh",
+        "Shrub Wetland"
+      ]
+    }
+  },
+  "boundary_image": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\results\\v2\\task_debug\\task-03ebb28bf1cd099e\\boundaries.png",
+  "render_dir": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\results\\v2\\task_debug\\task-03ebb28bf1cd099e",
+  "task_dir": "C:\\Users\\noahc\\source\\repos\\sdsr-site\\project\\data\\v2_tasks\\task-03ebb28bf1cd099e",
+  "task_id": "task-03ebb28bf1cd099e"
+}
