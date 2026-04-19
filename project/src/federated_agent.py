@@ -305,14 +305,44 @@ def train_fedavg(
     snapshot_method_name: str = "FedAvg",
 ) -> tuple[list[float], WetlandGCN]:
     """
-    data           : Full graph data object
-    partitions     : List of node index arrays for each partition
-    channel        : CommunicationChannel — governs communication schedule and dropout
-    epochs         : Number of local-training epochs
-    local_steps    : Max gradient steps each node takes locally per round
-    lr             : Learning rate for local training
-    num_threads    : PyTorch CPU thread count per node (default 4 = Jetson Nano class)
-    time_budget_ms : Wall-clock ms budget for each node's gradient loop; None = no limit
+    data                : Full graph data object used for evaluation and, when the
+                          simulator is disabled, for partition-derived local training.
+    partitions          : List of node index arrays defining each drone's static
+                          local partition for non-simulator FedAvg runs.
+    channel             : CommunicationChannel that decides which epochs are
+                          communication rounds and which drones successfully uplink.
+    epochs              : Number of global FedAvg rounds to execute.
+    local_steps         : Maximum gradient steps each node takes during its local
+                          training phase on a given round.
+    lr                  : Adam learning rate for each node's local optimizer.
+    num_threads         : PyTorch CPU thread count used inside each local training
+                          loop (default 4 = Jetson Nano class hardware).
+    time_budget_ms      : Optional wall-clock budget for each node's local gradient
+                          loop; training exits early for that node when the budget
+                          is exhausted.
+    initial_state_dict  : Optional shared starting weights. When provided, FedAvg
+                          starts from these parameters so comparisons with other
+                          training methods use matched initialization.
+    hidden_channels     : Hidden width for the WetlandGCN instantiated for both
+                          local training and full-graph evaluation.
+    simulator           : Optional SpatialGridSimulator. When provided, local data
+                          access and communication eligibility become position-based
+                          instead of partition-only.
+    simulator_view_radius : Hop radius passed to simulator local-view extraction,
+                            controlling how much of the graph each drone can train on
+                            from its current simulator position.
+    simulator_comm_radius : Manhattan communication radius used to determine which
+                            drones are close enough to the base station to uplink on
+                            a FedAvg communication round.
+    move_drones         : If True, advance simulator drone positions once per round
+                          before local-view extraction.
+    snapshot_every      : Export simulator-backed FedAvg PNG snapshots every N
+                          completed rounds, plus round 0 and the final round when
+                          cadence rules request them. Disabled when set to 0.
+    snapshot_output_dir : Directory where simulator snapshot PNGs are written when
+                          snapshot export is enabled.
+    snapshot_method_name : Label included in snapshot titles and output naming so
+                           saved renders can distinguish FedAvg from other methods.
     """
     if initial_state_dict is None:
         template_model = WetlandGCN(

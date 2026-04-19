@@ -288,9 +288,19 @@ subgraph for the entire run.
     partition-respecting grid step before that round's local-view extraction.
 - Gossip exchanges are limited to dropout survivors that are also within the
     configured Manhattan communication radius of one another.
+- `train_gossip` also exposes method-specific controls for matched
+    initialization (`initial_state_dict`), separate simulator sensing vs pairwise
+    exchange ranges (`simulator_view_radius` vs `simulator_comm_radius`),
+    optional drone motion (`move_drones`), and snapshot labeling/output
+    (`snapshot_every`, `snapshot_output_dir`, `snapshot_method_name`).
 - FedAvg uses the same dropout model, but only drones within the configured
     communication radius of a fixed grid-centroid base station may uplink their
     updates on a communication round.
+- `train_fedavg` also exposes method-specific controls for matched
+    initialization (`initial_state_dict`), separate simulator sensing vs uplink
+    ranges (`simulator_view_radius` vs `simulator_comm_radius`), optional drone
+    motion (`move_drones`), and snapshot labeling/output (`snapshot_every`,
+    `snapshot_output_dir`, `snapshot_method_name`).
 - Being out of range is treated as a topology constraint, not as a dropout or
     blackout event in `interruptions.json`.
 - If `--snapshot-every N` is enabled, the experiment writes method-specific PNG

@@ -146,18 +146,46 @@ def train_gossip(
 
     Parameters
     ----------
-    data           : full PyG Data object (x, edge_index, y)
-    partitions     : list of K global node-index arrays (one per drone)
-    channel        : CommunicationChannel — governs comm schedule and dropout
-    epochs         : number of local-training epochs
-    local_steps    : max gradient steps each drone takes before a possible gossip exchange
-    lr             : Adam learning rate
-    num_threads    : PyTorch CPU thread count per drone.  Default 4 reflects a
-                     typical ARM Cortex-A72 / Jetson Nano class device (4 cores).
-                     Override to simulate faster (8) or slower (1-2) hardware.
-    time_budget_ms : Wall-clock time budget in ms for each drone's local training
-                     step.  The gradient loop exits early if the budget runs out
-                     before *local_steps* are reached.  None = no constraint.
+    data                : Full graph data object used for evaluation and, when the
+                          simulator is disabled, for partition-derived local training.
+    partitions          : List of K global node-index arrays defining each drone's
+                          static local partition for non-simulator gossip runs.
+    channel             : CommunicationChannel that decides which epochs are
+                          communication rounds and which eligible drone pairs gossip.
+    epochs              : Number of decentralised gossip rounds to execute.
+    local_steps         : Maximum gradient steps each drone takes before a possible
+                          gossip exchange on that round.
+    lr                  : Adam learning rate for each drone-local optimizer.
+    num_threads         : PyTorch CPU thread count per drone. Default 4 reflects a
+                          typical ARM Cortex-A72 / Jetson Nano class device (4 cores).
+                          Override to simulate faster (8) or slower (1-2) hardware.
+    time_budget_ms      : Optional wall-clock time budget in ms for each drone's
+                          local training phase. The gradient loop exits early if
+                          the budget is exhausted before *local_steps* are reached.
+    initial_state_dict  : Optional shared starting weights. When provided, all
+                          drone models start from these parameters so gossip,
+                          FedAvg, and centralized runs can share matched
+                          initialization.
+    hidden_channels     : Hidden width for the WetlandGCN instantiated for each
+                          drone model and for full-graph evaluation snapshots.
+    simulator           : Optional SpatialGridSimulator. When provided, each
+                          drone trains on simulator-derived local views and only
+                          nearby drone pairs may gossip.
+    simulator_view_radius : Hop radius passed to simulator local-view extraction,
+                            controlling how much of the graph each drone observes
+                            from its current simulator position.
+    simulator_comm_radius : Manhattan communication radius used to filter which
+                            drone pairs are close enough to exchange weights on
+                            a scheduled gossip round.
+    move_drones         : If True, advance simulator drone positions once per
+                          round before local-view extraction.
+    snapshot_every      : Export simulator-backed gossip PNG snapshots every N
+                          completed rounds, plus round 0 and the final round when
+                          cadence rules request them. Disabled when set to 0.
+    snapshot_output_dir : Directory where simulator snapshot PNGs are written when
+                          snapshot export is enabled.
+    snapshot_method_name : Label included in snapshot titles and output naming so
+                           saved renders can distinguish gossip from other methods.
 
     Returns
     -------
