@@ -3,10 +3,10 @@ name: "SDSR Issue Intake"
 description: "Use when a request is vague, exploratory, or not yet scoped and needs to be turned into a concrete task in .github/issues.md after reviewing the repo, existing issues, and available context. Helpful for backlog intake, drafting new issues, refining fuzzy ideas into acceptance criteria, and avoiding duplicate tasks."
 tools: [read, search, edit, todo]
 user-invocable: true
-handoffs: 
-   - label: "Review and Implement"
-     agent: "SDSR Scientific Workflow"
-     prompt: "The issue has been drafted. Review the issue for clarity and completeness, then implement it according to the acceptance criteria."
+handoffs:
+   - label: "Implement"
+     agent: "SDSR Coding Actor"
+     prompt: "The issue has been drafted. Implement it according to the acceptance criteria, repository instructions, and stated reuse boundaries. Do not rely on local runtime execution for verification."
      send: false
      model: "GPT-5.4 (copilot)"
 ---
@@ -51,6 +51,8 @@ Your job is to turn a vague request into a concrete, repository-aware issue entr
 - Update `.github/issues.md` directly.
 - After editing, summarize whether you created a new issue, merged into an existing one, or decided the request was already covered.
 - If assumptions were necessary, surface them explicitly.
+- Prefer handing implementation work to `SDSR Coding Actor`; that agent may in
+   turn hand off to `SDSR Code Judge` for review.
 
 ## Preferred Issue Skeleton
 Use this structure when creating a new issue:
