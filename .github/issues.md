@@ -982,3 +982,582 @@ Smallest reasonable assumptions for this issue:
 - [x] Snapshot renders reflect evolving decentralized model state even when drone positions remain fixed
 - [x] A seeded smoke test or small end-to-end run with `--snapshot-every 5` produces multiple non-empty PNG files without interrupting training
 - [x] `project/README.md` documents the new option and where the snapshot images are written
+
+---
+
+## Issue #23 — Establish v2 parallel workflow boundary and namespace ✓ DONE
+
+**Labels:** `workflow` `documentation`
+**Files:** `project/src/v2/__init__.py`, `project/README.md`
+**Depends on:** none
+
+### Context
+The current repository is explicitly a v1 benchmark centered on goal-conditioned
+shortest-path regression over a single graph built from the wetlands dataset.
+The user now wants a **parallel v2 workflow** for decentralized mosquito-risk
+mapping that should reuse generic infrastructure where possible, but must not
+overwrite or repurpose the existing v1 code path.
+
+The v2 design is materially different from v1:
+- v1 target: Dijkstra distance to a selected goal node
+- v2 target: hidden continuous mosquito-risk field over sampled real wetland
+    windows
+- v1 local training: partition-oriented / simulator-local graph views
+- v2 local training: free-moving drones observing local vision bubbles on the
+    full sampled map
+
+This issue exists to define the repository boundary before any v2 benchmark
+logic is added. Without that boundary, later issues risk mutating v1 code in
+place and making the two experiment families hard to compare or maintain.
+
+Smallest reasonable assumptions for this issue:
+- v1 remains the canonical shortest-path benchmark and is not removed,
+    renamed, or behaviorally changed.
+- New benchmark-specific code lives under a dedicated `project/src/v2/`
+    namespace rather than modifying existing source modules in place.
+- Existing generic modules may be imported directly from v2 when their
+    semantics still apply, especially `load_data.py` for GeoPackage access and
+    `comms.py` for communication scheduling / dropout logging.
+- v2 outputs and cached task artifacts must live under v2-specific roots so
+    they do not collide with v1 results.
+
+### Required behavior
+- Create the v2 source namespace under `project/src/v2/` with a minimal
+    package marker and a short package-level docstring describing the v2
+    benchmark scope.
+- Update `project/README.md` so the repository documents two parallel
+    workflows:
+    - v1 shortest-path regression (existing)
+    - v2 mosquito-risk mapping (new, under active implementation)
+- Document the reuse boundary explicitly: v2 may import generic utilities from
+    `load_data.py` and `comms.py`, but benchmark-specific data generation,
+    simulation, training, evaluation, and CLI orchestration belong in new v2
+    modules.
+- Define the default v2 directory conventions in the README so downstream
+    issues have a stable target for new files and artifacts.
+
+### Acceptance criteria
+- [x] `project/src/v2/` exists as a documented parallel namespace for new benchmark code
+- [x] `project/README.md` distinguishes the existing v1 shortest-path workflow from the new v2 mosquito-risk workflow
+- [x] The README states that v1 source files remain supported and are not the implementation target for new v2 benchmark logic
+- [x] The README documents that v2 should reuse `load_data.py` and `comms.py` where possible instead of duplicating them
+- [x] The README defines non-conflicting v2 output and cache roots so later issues can rely on them
+
+---
+
+## Issue #24 — Build sampled wetland-window tasks and immutable v2 task cache
+
+**Labels:** `feature` `data` `workflow`
+**Files:** `project/src/v2/task_sampling.py`, `project/src/v2/task_cache.py`, `project/README.md`
+**Depends on:** #23
+
+### Context
+The current pipeline grids the same statewide GeoPackage extent for each run.
+That is appropriate for the v1 single-graph benchmark, but it is too rigid for
+the v2 mosquito-risk mapping workflow, where the user wants many sampled maps
+derived from the real wetlands data instead of one repeatedly reused
+"mega-map."
+
+The v2 benchmark should therefore separate **task generation** from **model
+training**. A task is a frozen sampled map window plus derived graph-ready base
+covariates. Multiple training runs may reuse the same task while varying drone
+starting positions, vision range, communication, movement policy, and compute
+constraints.
+
+This issue covers only the real-data map-window sampling and cache layer. It
+does not yet define the hidden mosquito-risk field itself.
+
+Smallest reasonable assumptions for this issue:
+- Use the existing `load_data.load_gdf()` entry point rather than duplicating
+    GeoPackage-loading logic.
+- Sample axis-aligned spatial windows from the statewide wetlands dataset.
+- Reject or resample windows that are effectively empty after clipping, so the
+    v2 task library does not fill with trivial no-wetland graphs.
+- Treat the cached task artifact as immutable once written; training code may
+    read it but must not modify it in place.
+- The cache key must be reproducible from the task-generation specification
+    rather than derived from wall-clock timestamps alone.
+
+### Required behavior
+- Implement a v2 task sampler that:
+    - loads the statewide GeoDataFrame via `load_gdf()`
+    - samples a bounded spatial window reproducibly from a seed / spec
+    - clips the wetland geometries to that window
+    - records enough metadata to reconstruct the same window later
+- Implement a v2 task cache layer that persists each sampled task artifact and
+    a manifest entry describing:
+    - task identifier
+    - source dataset / layer metadata
+    - sampling seed and sampling parameters
+    - window bounds
+    - basic wetland summary statistics
+- Ensure repeated requests for the same task specification resolve to the same
+    cached artifact rather than silently regenerating a different one.
+- Expose a lightweight standalone entry point in `project/src/v2/task_sampling.py`
+    so users can resolve or create cached tasks outside the core training /
+    experiment loop.
+- Document the task-library concept and cache behavior in `project/README.md`.
+
+### Acceptance criteria
+- [x] A fixed task-generation seed and spec produce the same sampled wetland window across repeated runs
+- [x] Sampled tasks are persisted under the v2 cache root defined in #23 and do not overwrite v1 outputs
+- [x] Each cached task includes a manifest or metadata record with the window bounds and generation parameters needed for exact reproduction
+- [x] The sampler rejects or resamples trivially empty windows according to a documented minimum-content rule
+- [x] Re-requesting an existing task spec returns the same cached task identifier instead of generating a second logically identical task
+- [x] `project/src/v2/task_sampling.py` can be invoked directly to create or reuse a cached task artifact outside the main experiment loop
+- [x] `project/README.md` explains the difference between cached task generation and later model-training runs
+
+---
+
+## Issue #25 — Generate hidden continuous mosquito-risk fields for cached v2 tasks
+
+**Labels:** `feature` `data` `evaluation`
+**Files:** `project/src/v2/risk_field.py`, `project/src/v2/task_cache.py`, `project/README.md`
+**Depends on:** #24
+
+### Context
+The v2 benchmark replaces the v1 Dijkstra-distance label with a hidden
+continuous mosquito-risk field layered on top of each sampled real wetland
+window. The user wants that field to be grounded in real wetland structure,
+biologically suggestive where possible, and stochastic enough that it is not a
+trivial re-encoding of the visible wetland-coverage feature.
+
+The currently agreed v2 label components are:
+- wetland-perimeter hotspot seeds with moderate probability rather than an
+    overly strong deterministic boundary rule
+- local risk bumps that decay over nearby cells rather than hard binary seed
+    labels alone
+- varying bump amplitudes across seeds
+- a small heterogeneous background field
+- additionally, (low) internal-marsh hotspot probability using indirect wetland-attribute
+    proxies when available, specifically `COW_CLASS1 == "EM1"` and
+    `SPCC_DESC == "Shallow Marsh"`
+
+This issue covers the hidden risk-field generator only. It does not yet define
+the v2 graph features or model architecture.
+
+Smallest reasonable assumptions for this issue:
+- The canonical v2 stored target is continuous risk, not binary class.
+- Thresholded hotspot labels may be derived secondarily for evaluation but are
+    not the primary stored benchmark target.
+- The risk generator may use cached task geometry / covariates plus raw
+    wetland-attribute proxies available in the sampled task metadata, but it
+    should not depend on labels observed during training.
+- If the proxy fields are absent or missing for a sampled task, the generator
+    should fall back to a documented geometry-only behavior instead of failing.
+
+### Required behavior
+- Implement a v2 risk-field generator that operates on one cached sampled task
+    and produces a continuous per-node mosquito-risk field using the agreed
+    ingredients:
+    - probabilistic wetland-perimeter seeds
+    - spatially decaying local bumps around active seeds
+    - heterogeneous bump amplitudes
+    - low-amplitude background variation
+    - elevated internal-marsh seed probability based on `EM1` and
+        `Shallow Marsh` proxies when available
+- Persist the generated field and all generator parameters into the cached task
+    artifact or an associated immutable derivative artifact.
+- Expose a deterministic interface so a fixed sampled task plus fixed risk
+    generation seed reproduces the same hidden field exactly.
+- Optionally derive a thresholded hotspot label or rank-based hotspot mask for
+    later evaluation, but keep the continuous field as the canonical source.
+- Document the generator inputs, fallback behavior, and stored outputs in the
+    README.
+
+### Acceptance criteria
+- [ ] A fixed cached task and fixed risk-generation seed reproduce the same continuous risk field exactly
+- [ ] Changing the risk-generation seed changes the field while leaving the sampled map window unchanged
+- [ ] The stored v2 task artifact records the risk-generator parameters and whether the EM1 / Shallow Marsh proxy path was used
+- [ ] The generated field includes nontrivial spatial variation beyond raw wetland coverage alone
+- [ ] Missing proxy attributes fall back to a documented behavior instead of causing task generation to fail
+- [ ] Any thresholded hotspot label is documented as a derived evaluation artifact rather than the canonical stored target
+- [ ] `project/README.md` documents the continuous-field design and the use of wetland perimeter and marsh-proxy factors
+
+---
+
+## Issue #26 — Create v2 graph builder and risk-prediction model without goal-conditioned features
+
+**Labels:** `feature` `data` `training`
+**Files:** `project/src/v2/build_graph_v2.py`, `project/src/v2/model_v2.py`, `project/README.md`
+**Depends on:** #24, #25
+
+### Context
+The current graph builder in `build_graph.py` is tightly coupled to the v1
+task: it creates one graph over a wetland grid, attaches goal-conditioned node
+features, and stores Dijkstra-distance labels. None of those semantics carry
+forward to the v2 mosquito-risk benchmark.
+
+v2 therefore needs a new graph/data contract that is compatible with PyTorch
+Geometric training while remaining separate from the v1 builder. The user has
+requested a parallel v2 workflow rather than in-place replacement.
+
+Smallest reasonable assumptions for this issue:
+- Reuse generic grid-graph ideas from the existing builder where still valid,
+    but implement them in new v2 files rather than editing `build_graph.py`.
+- Keep the node-level scalar prediction shape compatible with the existing
+    simple GCN pattern where practical, but interpret it as continuous
+    mosquito-risk rather than distance-to-goal.
+- Include spatial-position features in v2.
+- Include goal-specific fields only in v1; v2 must not carry `goal_node`,
+    `goal_pos`, or goal-relative delta features.
+
+### Required behavior
+- Implement a v2 graph builder that transforms one cached sampled task into a
+    PyG `Data` object for risk prediction.
+- Define and document the v2 node feature set. The smallest defensible feature
+    set includes:
+    - wetland coverage
+    - normalized spatial position
+    - one or more wetland-structure / proxy channels useful for v2 risk
+        reconstruction, such as perimeter proximity or marsh-proxy indicators
+- Store the continuous risk field as the target `y` for the v2 graph.
+- Implement a v2 risk-prediction GNN model in a new file that keeps the simple
+    scalar node-level output contract but is semantically distinct from the v1
+    distance-regression model.
+- Update the README so the v2 graph contract and model target are documented.
+
+### Acceptance criteria
+- [ ] `build_graph_v2.py` builds a valid PyG `Data` object from a cached v2 task without relying on goal-node concepts
+- [ ] The v2 `Data` object stores the continuous mosquito-risk field as the node-level target
+- [ ] The v2 feature tensor includes documented spatial and wetland-derived channels beyond a single raw wetland-coverage scalar
+- [ ] `model_v2.py` exposes a node-level risk model whose output shape is compatible with centralized and decentralized training
+- [ ] No goal-conditioned fields from v1 are required by the v2 graph builder or model
+- [ ] `project/README.md` documents the v2 feature contract and risk target semantics
+
+---
+
+## Issue #27 — Implement free-movement v2 drone simulator without fixed partitions
+
+**Labels:** `feature` `simulation`
+**Files:** `project/src/v2/grid_sim_v2.py`, `project/README.md`
+**Depends on:** #24, #26
+
+### Context
+The current `SpatialGridSimulator` is designed for the v1 workflow: drones are
+associated with partitions and, when movement is enabled, step only within
+their own partition. That matches the v1 decentralized setup but does not fit
+the v2 benchmark, where drones are intended to explore the sampled map freely
+and gather local risk observations from anywhere on the task graph.
+
+This issue adds a v2 simulator rather than modifying the existing one in place.
+
+Smallest reasonable assumptions for this issue:
+- Drones move on the same 4-neighbour grid adjacency used elsewhere in the
+    repository.
+- Drones are initialized at reproducible random map positions rather than
+    partition centroids.
+- A configurable minimum-separation rule between starting positions is useful
+    when feasible, but a documented best-effort fallback is acceptable when the
+    map is too small.
+- The simulator should preserve the ability to export snapshots for debugging
+    and evaluation.
+
+### Required behavior
+- Implement a v2 simulator that:
+    - initializes drone positions randomly and reproducibly on the full sampled
+        map
+    - supports movement anywhere on the map via 4-neighbour adjacency
+    - returns per-drone local observation bubbles based on a configured vision
+        radius
+    - can render the current task state and drone positions to PNG
+- Keep the simulator interface easy to audit from the training loops, similar
+    in spirit to the existing simulator but without partition semantics.
+- Document the simulator’s initialization and movement assumptions in the
+    README.
+
+### Acceptance criteria
+- [ ] `grid_sim_v2.py` initializes drones at reproducible random positions on the full map rather than partition centroids
+- [ ] Drones may move across the full sampled map and are not restricted by v1 partition ownership
+- [ ] The simulator exposes a local-view API based on vision radius for downstream training loops
+- [ ] Snapshot or visualization output renders the sampled map and current drone positions without relying on v1 partition metadata
+- [ ] `project/README.md` documents the v2 simulator’s free-movement semantics and initialization behavior
+
+---
+
+## Issue #28 — Add configurable v2 movement policies for exploration and mapping
+
+**Labels:** `feature` `simulation` `training`
+**Files:** `project/src/v2/movement_policy.py`, `project/src/v2/grid_sim_v2.py`, `project/README.md`
+**Depends on:** #27
+
+### Context
+Pure random movement is easy to implement but too weak to carry the scientific
+story of the v2 mapping benchmark on its own. The user wants drone movement to
+be informed by what each drone can currently observe and what parts of the map
+remain informative to sample.
+
+This issue introduces a policy abstraction so v2 experiments can compare random
+motion against at least one informed exploration strategy without baking one
+hard-coded movement rule into the simulator.
+
+Smallest reasonable assumptions for this issue:
+- Keep a random-walk policy as a baseline.
+- Add at least one non-random policy that uses current mapping state such as
+    uncertainty, novelty, or low-observation coverage.
+- The simulator remains responsible for applying valid moves; the policy only
+    chooses among candidate moves.
+
+### Required behavior
+- Implement a v2 movement-policy interface in a new module.
+- Provide at least two concrete policies:
+    - random baseline
+    - one informed exploration policy using current model or coverage state
+- Thread the selected policy through the v2 simulator or training loop in a
+    way that is deterministic under fixed seeds.
+- Document the available policy choices and their intended behavior in the
+    README.
+
+### Acceptance criteria
+- [ ] The v2 movement-policy API supports selecting among at least two named policies without editing simulator internals
+- [ ] A random baseline policy is implemented and reproducible under a fixed seed
+- [ ] At least one informed exploration policy uses current state beyond pure randomness when choosing the next move
+- [ ] Under the same cached task and random seed, different policies can produce different trajectories
+- [ ] `project/README.md` documents the available movement policies and what benchmark question they are meant to test
+
+---
+
+## Issue #29 — Implement v2 centralized, FedAvg, and gossip training over local observation bubbles
+
+**Labels:** `feature` `training`
+**Files:** `project/src/v2/train_v2.py`, `project/src/v2/federated_v2.py`, `project/README.md`
+**Depends on:** #26, #27, #28
+
+### Context
+The v1 training code is tied to the shortest-path benchmark and, for
+decentralized methods, to either partition-based local subgraphs or the v1
+simulator integration. The v2 benchmark needs parallel training loops that use
+the new cached tasks, the v2 graph contract, and free-moving drone observation
+bubbles.
+
+The user wants maximum reuse where sensible, but not by overwriting existing
+benchmark-specific code. In particular, `comms.py` should still be reused where
+its scheduling, dropout, and logging semantics remain applicable.
+
+Smallest reasonable assumptions for this issue:
+- Centralized training remains the full-task reference baseline.
+- FedAvg and gossip should both train only on nodes currently visible inside
+    each drone’s observation bubble.
+- Existing communication-channel semantics from `comms.py` may be imported
+    directly instead of rewritten.
+- Existing compute-budget knobs (`num_threads`, `time_budget_ms`) should remain
+    available in v2 where practical.
+
+### Required behavior
+- Implement v2 centralized training against the full cached-task graph.
+- Implement v2 FedAvg and gossip training loops that:
+    - read per-drone local data from the v2 simulator
+    - reuse `CommunicationChannel` for communication timing and dropout where
+        appropriate
+    - keep communication logs method-specific
+    - start from matched initialized model states for fair comparison
+- Keep the v2 training loops isolated from v1 modules except for imported
+    generic helpers that remain semantically valid.
+- Update the README to explain how v2 local observation bubbles drive
+    decentralized training.
+
+### Acceptance criteria
+- [ ] `train_v2.py` exposes a centralized reference training path for the v2 risk-prediction task
+- [ ] V2 FedAvg trains from per-drone local observation bubbles instead of v1 partitions or goal-based local subsets
+- [ ] V2 gossip trains from per-drone local observation bubbles instead of v1 partitions
+- [ ] V2 decentralized training reuses `CommunicationChannel` from `comms.py` rather than duplicating its schedule / dropout logic
+- [ ] V2 training preserves configurable compute-constraint knobs or explicitly documents any justified change in those semantics
+- [ ] Centralized, FedAvg, and gossip all start from matched initial states on the same cached task for fair comparison
+- [ ] `project/README.md` documents the v2 training setup and its reuse boundary with existing v1 infrastructure
+
+---
+
+## Issue #30 — Add v2 risk-map reconstruction evaluation and reporting
+
+**Labels:** `feature` `evaluation` `documentation`
+**Files:** `project/src/v2/evaluations_v2.py`, `project/README.md`
+**Depends on:** #29
+
+### Context
+The existing evaluation module is built around the v1 shortest-path benchmark:
+MSE against Dijkstra labels plus greedy-path behavior. Those outputs are not
+meaningful for a v2 mosquito-risk mapping benchmark.
+
+v2 needs its own evaluation path that measures reconstruction quality for the
+continuous risk field and, optionally, hotspot-detection quality for derived
+binary labels or top-risk sets.
+
+Smallest reasonable assumptions for this issue:
+- Continuous-field reconstruction remains the primary evaluation target.
+- Binary hotspot metrics may be derived secondarily from thresholded labels or
+    rank-based hotspot sets.
+- Snapshot and map visualizations remain useful, but they should visualize
+    predicted and true risk rather than greedy paths or goal-seeking behavior.
+
+### Required behavior
+- Implement a v2 evaluation module that reports full-map reconstruction quality
+    for centralized, FedAvg, and gossip.
+- Add at least one threshold- or ranking-based hotspot-detection summary in
+    addition to continuous-risk error reporting.
+- Save v2 plots and summary artifacts under v2-specific names and directories so
+    they do not collide with v1 outputs.
+- Document the meaning of the v2 metrics and plots in the README.
+
+### Acceptance criteria
+- [ ] `evaluations_v2.py` reports continuous-field reconstruction metrics for centralized, FedAvg, and gossip on the same cached task
+- [ ] V2 evaluation includes at least one hotspot-detection summary derived from the continuous risk field
+- [ ] No greedy-path or goal-reaching metrics are required by the v2 evaluation path
+- [ ] V2 evaluation artifacts are written under v2-specific names or directories and do not overwrite v1 plots
+- [ ] `project/README.md` documents the v2 metrics and explains how they differ from the v1 pathfinding-oriented outputs
+
+---
+
+## Issue #31 — Implement v2 CLI entry point and task-library workflow
+
+**Labels:** `feature` `integration` `workflow` `documentation`
+**Files:** `project/src/main_v2.py`, `project/README.md`
+**Depends on:** #23, #24, #25, #26, #27, #28, #29, #30
+
+### Context
+Once the v2 task cache, latent risk generator, simulator, training loops, and
+evaluation path exist, the repository still needs an end-to-end entry point for
+running v2 experiments without touching the v1 `main.py` workflow.
+
+The user has also explicitly requested the ability to reuse precomputed sampled
+maps and hidden continuous hotspot fields across multiple training runs rather
+than regenerating them each time.
+
+This issue therefore closes the loop for the v2 benchmark by adding a parallel
+CLI and task-library workflow.
+
+Smallest reasonable assumptions for this issue:
+- `main_v2.py` is a separate entry point; it does not replace or rename the
+    existing `main.py`.
+- The CLI should support both task generation / caching and experiment
+    execution against an existing cached task.
+- V2 outputs, logs, and snapshots should resolve under the v2 results root
+    defined in #23.
+
+### Required behavior
+- Implement a v2 CLI entry point that can:
+    - build or extend a cached task library
+    - select an existing cached task by identifier
+    - run centralized, FedAvg, and gossip on that cached task
+    - persist v2 evaluation outputs and logs without colliding with v1
+- Keep the v1 `main.py` behavior unchanged.
+- Update the README with a v2 quick-start path covering both task generation
+    and experiment execution.
+
+### Acceptance criteria
+- [ ] `main_v2.py` exists as a documented parallel CLI entry point and does not replace the existing v1 `main.py`
+- [ ] The v2 CLI can generate at least one cached task and later rerun experiments on that same task without rebuilding it
+- [ ] The v2 CLI can run centralized, FedAvg, and gossip against a selected cached task identifier
+- [ ] V2 logs, plots, and snapshots are written under the v2 results root and do not overwrite v1 outputs
+- [ ] `project/README.md` includes a v2 quick start covering task-library generation and experiment execution
+
+---
+
+## Issue #32 — Add actor-judge custom-agent workflow for issue-driven implementation ✓ DONE
+
+**Labels:** `feature` `workflow` `documentation`
+**Files:** `.github/agents/sdsr-coding-actor.agent.md`, `.github/agents/sdsr-code-judge.agent.md`, `.github/agents/sdsr-issue-intake.agent.md`
+**Depends on:** `.github/copilot.instructions.md`, `.github/issues.md`, #16, #17
+
+### Context
+The repository already has a scientific-workflow agent and an issue-intake
+agent, but the user no longer wants implementation to be routed primarily
+through the scientific workflow prompt. The practical reason is repository
+specific: dependency-heavy runtime testing through agent environments is often
+not available, so an implementation agent that insists on local execution tends
+to fail noisily rather than helpfully.
+
+The requested replacement is an **actor-judge workflow**:
+- a coding actor that takes concrete tasks from `.github/issues.md` and
+    implements them according to the issue contract and repository goals
+- a code judge that reviews the actor's code for correctness and completeness
+    by inspection
+
+This change should augment the current custom-agent setup without deleting the
+existing scientific-workflow agent. The critical workflow change is that new
+issue implementation should default to the actor first, with the judge used for
+review, rather than treating execution-heavy scientific workflow as the default
+handoff path.
+
+Smallest reasonable assumptions for this issue:
+- The coding actor should avoid local runtime execution and heavy dependency
+    tests by design.
+- The judge should be review-oriented and should not depend on runtime
+    execution either.
+- The issue-intake agent should hand implementation work to the actor, not the
+    scientific-workflow agent.
+- The scientific-workflow agent may remain available for investigations and
+    experiments, but it is no longer the default implementation handoff.
+
+### Acceptance criteria
+- [x] A new user-invocable coding-actor agent exists under `.github/agents/`
+- [x] The coding actor is instructed to implement scoped issues from `.github/issues.md` without relying on local runtime execution
+- [x] A new user-invocable code-judge agent exists under `.github/agents/`
+- [x] The code judge is instructed to review correctness and completeness by code inspection, with explicit handling of unverified runtime-dependent items
+- [x] The issue-intake agent hands implementation work to `SDSR Coding Actor` instead of defaulting to `SDSR Scientific Workflow`
+- [x] The new agent prompts preserve repository-specific concerns such as issue-driven implementation, reuse boundaries, and documentation discipline
+
+---
+
+## Issue #33 — Add detailed cached-task attribute renderer for v2 debug inspection ✓ DONE
+
+**Labels:** `feature` `workflow` `documentation`
+**Files:** `project/src/v2/task_debug_render.py`, `project/README.md`
+**Depends on:** #24
+
+### Context
+The current v2 sampler debug image in `project/src/v2/task_sampling.py` is a
+useful coarse check that a sampled window lands in roughly the right wetland
+area, but it is not detailed enough for inspecting the actual composition of a
+cached task. The user now wants a separate debug program that takes an already
+created cached task and renders a more detailed local image showing wetland
+boundaries and attribute distributions such as `COW_CLASS1` and `SPCC_DESC`.
+
+This is materially different from the existing sampler debug view:
+- the current view focuses on sampled-window placement and rough geometry
+- the requested view focuses on within-window feature composition for one
+    cached task
+- the new renderer should read an existing cached task artifact rather than
+    resampling a new task
+
+This issue is intentionally scoped as a standalone debug/inspection tool rather
+than part of the training or evaluation loop. It should help the user verify
+that cached v2 tasks contain meaningful local wetland structure before later
+issues build risk fields and graph features on top of them.
+
+Smallest reasonable assumptions for this issue:
+- Reuse `load_cached_task(...)` from `project/src/v2/task_cache.py` instead of
+    duplicating task-loading logic.
+- The cached `window.geojson` should already preserve wetland attributes stored
+    in the sampled task; the renderer should visualize whichever relevant
+    columns are present without mutating the cached artifact.
+- Because cached tasks are intended to be immutable, rendered debug outputs
+    should default to a v2 results/debug path rather than writing inside the
+    cached task directory.
+- Attribute names may appear in lowercase GeoPandas form such as
+    `cow_class1` / `spcc_desc`; the renderer should handle the documented label
+    intent even if source column casing differs.
+
+### Required behavior
+- Implement a standalone v2 debug renderer in a new file that can:
+    - load one cached task by identifier or explicit task directory
+    - render a detailed local geometry view for the sampled task
+    - render wetland boundaries clearly enough to inspect feature shape and
+        density within the sampled window
+    - render categorical attribute views for at least:
+        - `COW_CLASS1`
+        - `SPCC_DESC`
+- Save the rendered outputs under a non-cache debug/results location such as a
+    task-specific subdirectory under `project/results/v2/`, so the immutable
+    task cache is only read, not modified.
+- Provide a small CLI entry point for generating the detailed render outputs
+    outside the core experiment loop.
+- Document the renderer's purpose, inputs, and output location in the README.
+
+### Acceptance criteria
+- [x] `project/src/v2/task_debug_render.py` exists as a standalone debug program for cached v2 tasks
+- [x] The renderer loads an existing cached task via the v2 cache layer instead of resampling data
+- [x] The renderer outputs at least one detailed boundary-focused image of the sampled wetland geometries
+- [x] The renderer outputs categorical debug views for `COW_CLASS1` and `SPCC_DESC`, or a documented fallback when one of those attributes is absent in the cached task
+- [x] Rendered debug artifacts are written outside the immutable cached task directory and do not overwrite `window.geojson` or `metadata.json`
+- [x] The CLI accepts a task identifier or equivalent explicit task locator and can generate detailed debug renders without entering the training loop
+- [x] `project/README.md` documents how to run the detailed cached-task renderer and where its outputs are written

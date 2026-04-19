@@ -5,3 +5,4 @@ project/results/*
 project/src/project/results/*
 **/snapshots/*
 **/*_smoke/*
+**/__pycache__/*
