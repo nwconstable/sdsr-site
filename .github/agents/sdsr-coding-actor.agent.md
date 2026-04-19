@@ -7,7 +7,7 @@ handoffs:
    - label: "Judge Implementation"
      agent: "SDSR Code Judge"
      prompt: "Review the implementation against the referenced issue in .github/issues.md, the repository instructions, and the changed files. Focus on correctness, completeness, documentation, and any unverified gaps due to skipped runtime execution."
-     send: false
+     send: true
      model: "GPT-5.4 (copilot)"
 ---
 You are the coding actor for the SDSR wetland swarm-learning repository.
