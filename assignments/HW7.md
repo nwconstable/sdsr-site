@@ -7,3 +7,6 @@
 > - Presentations on survey papers should include motivation, major problems in the area, key results, open problems, and key sources. Focus on major problems and key results. Use summary figures (e.g. classification diagram for all approached to recovery in the Computing Survey paper in our readings) or tables to highlight key messages.
 > - Presentations on projects should follow the format of paper analysis. Candidate sections include motivation, problem definition, key issues and alternative ways of resolving those, related work and their limitations, your approach, validation, conclusions (key contributions), and future work (assumptions and potential extensions).
 > - Reviwers may use the following form to review the final class presentations and the final project reports.
+
+[Google Slides](https://docs.google.com/presentation/d/1NOww1ST-1Q10Go-sVE2ZDxI1t4j0GQoASUkMZwjTgPM/edit?usp=sharing)
+[PDF](../images/HW7/Project%20Presentation.pdf)
