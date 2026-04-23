@@ -37,15 +37,23 @@ The group claims to introduce p-values as an improvement over state of the art, 
 
 >Did the report list contribution claims? For example, did it list contribution such as new concepts, theories, data-structures, algorithms, new approaches, etc.
 
-The group lists four main contributions: a) a conceptual distinction between the four previously-listed spatial relationships, b) the introduction of p-values as a “principled” way to evaluate statistical significance, c) a random simulation framework to generate simulated data under independence assumptions, and d) a proof for the metrics `p_pos` and `p_neg` while providing interpretation. 
+The group lists four main contributions: a) a conceptual distinction between the four previously-listed spatial relationships, b) the introduction of p-values as a “principled” way to evaluate statistical significance, c) a random simulation framework to generate simulated data under independence assumptions, and d) formulations for the metrics `p_pos` and `p_neg` while providing interpretation. 
 
 >Did the report provide evidence to support the contribution claims?
 
+The group does not provide clear definitions nor distinctions between the fours listed co-location patterns. They do introduce p-values, but not as defined in the statistical sense, leading to an overloaded term that confuses the reader. The random simulation framework is not explained at all. We are not told how simulations are created, only that they have an assumption of independence. A simple example using their formulation of `p_pos` and `p_neg` is given, but not expanded on nor explained.
+
 >Did the report include next steps and future work? 
+
+The group includes a short section stating that future work should focus on refinements to the simulation framework in terms of efficiency and robustness. They also claim this can be used for multiple features.
 
 >Are the results reproducible? (For example, did the report provide adequate details of proofs, experiment design, case study parameters, assumptions to help readers understand the validation process.)
 
+The groups formulation of `p_pos` and `p_neg` is reproducible, however the simulation framework is not explained enough to reproduce this, leading to incomplete formulas. We are neither told the sample data nor the sampling methods. The listed co-location patterns are not explained in the paper enough to apply them to any findings.
+
 >Other comments (e.g., readability, self-contained?, grammar, adequate use of illustrations, summarizing data with charts, etc.)
+
+The Problem Statement's ideas are not clearly connected to each other, so the point about confusion between the terms is, itself, confusing. The construction of the paper seems to have redundancies, for example the Significance section seems to be a re-wording of the Problem Statement, with little added especially in regards to the signficance of this problem. P-values are an established part of statistics and the introduction of the term here does not seem to use the common definitions, nor formulations. This leads to an overloaded term that only confuses the reader. There are no visualizations to help convey ideas. There are not any major grammatical issues, only minor typos.
 
 ### G6 Review (WIP)
 
