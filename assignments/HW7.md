@@ -22,7 +22,7 @@ Reproducibility is limited. While the formulas for `p_pos` and `p_neg` are clear
 
 Finally, the report has several issues with clarity and organization. The Problem Statement introduces confusion about terminology without resolving it, and the Significance section largely repeats earlier points without adding depth. The use of “p-values” does not align with standard definitions, leading to an overloaded and potentially misleading term. Additionally, there are no visualizations or diagrams to support the explanations. While there are no major grammatical issues, the overall presentation lacks cohesion and precision.
 
-### G6 Review (WIP)
+### G6 Review
 
 The report focuses on identifying spatial co-location patterns across two domains: retail data in Minneapolis and crime data in Chicago. The core problem is to detect statistically significant spatial relationships that may reveal underlying structure, such as commercial demand patterns or urban risk distributions. The proposed approach follows a clear pipeline: data preprocessing, spatial feature construction, neighborhood definition via a distance threshold, candidate generation, and co-location detection using the Participation Index (PI). Statistical significance is then evaluated using randomized simulations under a null hypothesis of spatial randomness. While the methodological components are largely drawn from prior work, the contribution appears to be the integration of these ideas into a unified, domain-agnostic framework and demonstrating its application across multiple datasets.
 
