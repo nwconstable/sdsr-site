@@ -9,4 +9,6 @@ The main critique from group G3 is that our presentation could utilize more intu
 
 ![alt text](../images/Project/ImagAddedToFinalReport.png)
 
-G1's critiques were...
+**Image source:** _Z. Zhou, X. Chen, E. Li, L. Zeng, K. Luo and J. Zhang, "Edge Intelligence: Paving the Last Mile of Artificial Intelligence With Edge Computing," in Proceedings of the IEEE, vol. 107, no. 8, pp. 1738-1762, Aug. 2019, doi: 10.1109/JPROC.2019.2918951, https://ieeexplore-ieee-org.ezp1.lib.umn.edu/document/8736011_
+
+G1's critiques were mostly aimed at the validation section and problem statement.  We added text to more clearly state what the input data was and the goal the training is aimed to acheive (output) in the problem statement.  We removed the validation header and replaced it with the shortcomings and analysis we could make in the section before the conclusions section.  The conclusion section was also filled in with proposed expansions of our project and suggestions for how to fix the mistakes we made.
