@@ -1,59 +1,26 @@
 ## CP8
 > You are already assigned two class projects to review (in teams web page). Review the assigned course projects. You may use the following review form: [Form](https://www.spatial.cs.umn.edu/Courses/Spring26/8715/CSCI-8715_Final_Review.docx). You are expected to submit 500 word comment to authors including a list of 3 to 4 specific suggestions for improvements. For the peer review, BOTH members on a team should provide input to both of the other papers critiques. Do not split the work of reviewing as it reduces feedback to the authors. 
 
-### G3 Review (WIP)
-> Provide a summary of the report listing the problem (e.g., definition, significance, challenges) and the proposed approach (e.g., description, novelty, superiority over competition).
+### G3 Review
+The problem posed by G3 appears to be that there are misunderstandings about the differences between the terms “positive co-location,” “negative co-location,” “statistically significant co-location,” and “segregation.” The stated significance is that understanding these terms allows us to distinguish between different spatial relationships. The proposed approach is to validate observed patterns against simulated data generated under independence assumptions, and then assess whether the observed participation values are unusually high or low relative to this simulated baseline.
 
-The problem posed by G3 appears to be that there are misunderstandings about the differences between the terms “positive co-location”, “negative co-location”, “statistically significant co-location”, and “segregation”. The significance is that understanding these terms allows us to easily distinguish between different spatial relationships. The proposed approach would validate real-world observations against simulations to try to show that the observed participation values are either much higher or lower than you’d see under independent and random scenarios. 
+The problem is only partially stated clearly. The output seems to be a decision about whether a co-location pattern is statistically significant, given a chosen significance level α. However, the inputs are not explicitly defined. A reader might infer that the inputs are spatial observations, but the report never specifies what is being observed, in what domain, or under what constraints. This lack of clarity is important, as spatial data can vary widely depending on context and underlying processes. Additionally, key concepts are not properly defined. For example, the “Participation Index” is referenced but never formally introduced or illustrated, making it difficult to fully understand the proposed method.
 
-> Is the problem stated clearly? 
->- Does it list inputs, output, an objective function, and >constraints (e.g., key assumptions). 
->- Does it illustrate inputs and output.
->- Does it define and illustrate key concepts needed to understand the problem statement?
+The importance of the problem is only weakly articulated. While the report mentions general examples such as animal co-habitation and commercial co-location, it does not clearly identify specific real-world applications or stakeholders who would benefit from this work. Nor does it demonstrate where existing methods fail in a way that necessitates the proposed approach.
 
-The output seems to be a decision of whether a co-location pattern is statistically significant, given some alpha value decided by the tester, but the inputs are not listed. A reader might infer that they are observations of something, but we’re never told what we’re observing, or where. This is important because the things you’re observing can vary drastically from tons of sources, including human intervention. Few concepts are introduced to explain these concepts, such as the mentioned “Participation Index” is never defined. 
+The report does not explicitly identify key challenges. As a result, there is no clear mapping between challenges and proposed solutions. While an approach is described, it is not framed as addressing specific technical or conceptual difficulties.
 
->Is the problem's importance articulated by addressing questions such as the following:
->- Who cares about the problem? 
->- If the project is successful, what difference (e.g., societal, technical) will it make?
+The group claims novelty in three main areas: removing user-defined thresholds, incorporating randomness through simulation, and linking spatial relationship terminology to outcomes via their defined “p-values.” However, these claims are not strongly justified. Simulation-based testing and the use of p-values are already well-established in statistical practice, so presenting them as novel contributions is questionable without clearer differentiation from existing work.
 
-Some simple cases are proposed, such as animal co-habitation and commercial co-location, but we’re not told of any particularly important cases nor practical uses where currently observed methods lack in analyzing spatial co-habitation. 
+Similarly, the report does not convincingly demonstrate superiority over the state of the art. While it claims that introducing p-values improves upon existing approaches, p-values are already central to statistical hypothesis testing. No empirical comparisons, theoretical arguments, or case studies are provided to support claims of improved performance or insight.
 
->Are the problem’s key challenges identified? 
+The report lists four main contributions: (a) a conceptual distinction between the four spatial relationship terms, (b) the introduction of p-values as a “principled” evaluation method, (c) a random simulation framework under independence assumptions, and (d) formulations for the metrics `p_pos` and `p_neg`. However, the evidence supporting these contributions is limited. The distinctions between the spatial concepts remain unclear and, in some cases, conceptually redundant. The use of “p-values” deviates from standard statistical definitions, leading to potential confusion. Most importantly, the simulation framework is not described in sufficient detail—there is no explanation of how spatial data is generated, what assumptions are enforced, or how density and domain are handled.
 
-There is no mention of challenges the group is specifically addressing.
+The report does include a brief discussion of future work, suggesting improvements to simulation efficiency and extensions to multiple features. However, these ideas are not developed in detail.
 
->Is an approach proposed to address the key challenges in the problem?
+Reproducibility is limited. While the formulas for `p_pos` and `p_neg` are clear and could be implemented, the lack of detail regarding the simulation process prevents full replication. Critical elements such as the sampling procedure, spatial domain, and data generation assumptions are omitted.
 
-There are no specified challenges so there are no approaches defined to address them.
-
->Is the novelty of the proposed approach articulated? For example, did the proposal summarize related work and their limitations overcome by the proposed approach?
-
-The group claims that their approach is novel for the lack of user-defined thresholds (unsupervised objectiveness), accountability for randomness with the random simulator usage, and the strong binding of the terms listed in the Problem Statement to simulated outcomes using their defined “p-values”.
-
->Did the report articulate the superiority of the proposed approach over the state of the art? For example, did it provide evidence (e.g., examples, theorems, experiments, case-study, etc.).
-
-The group claims to introduce p-values as an improvement over state of the art, but p-values remain the backbone of statistical significance testing, especially against null distributions. 
-
->Did the report list contribution claims? For example, did it list contribution such as new concepts, theories, data-structures, algorithms, new approaches, etc.
-
-The group lists four main contributions: a) a conceptual distinction between the four previously-listed spatial relationships, b) the introduction of p-values as a “principled” way to evaluate statistical significance, c) a random simulation framework to generate simulated data under independence assumptions, and d) formulations for the metrics `p_pos` and `p_neg` while providing interpretation. 
-
->Did the report provide evidence to support the contribution claims?
-
-The group does not provide clear definitions nor distinctions between the fours listed co-location patterns. They do introduce p-values, but not as defined in the statistical sense, leading to an overloaded term that confuses the reader. The random simulation framework is not explained at all. We are not told how simulations are created, only that they have an assumption of independence. A simple example using their formulation of `p_pos` and `p_neg` is given, but not expanded on nor explained.
-
->Did the report include next steps and future work? 
-
-The group includes a short section stating that future work should focus on refinements to the simulation framework in terms of efficiency and robustness. They also claim this can be used for multiple features.
-
->Are the results reproducible? (For example, did the report provide adequate details of proofs, experiment design, case study parameters, assumptions to help readers understand the validation process.)
-
-The groups formulation of `p_pos` and `p_neg` is reproducible, however the simulation framework is not explained enough to reproduce this, leading to incomplete formulas. We are neither told the sample data nor the sampling methods. The listed co-location patterns are not explained in the paper enough to apply them to any findings.
-
->Other comments (e.g., readability, self-contained?, grammar, adequate use of illustrations, summarizing data with charts, etc.)
-
-The Problem Statement's ideas are not clearly connected to each other, so the point about confusion between the terms is, itself, confusing. The construction of the paper seems to have redundancies, for example the Significance section seems to be a re-wording of the Problem Statement, with little added especially in regards to the signficance of this problem. P-values are an established part of statistics and the introduction of the term here does not seem to use the common definitions, nor formulations. This leads to an overloaded term that only confuses the reader. There are no visualizations to help convey ideas. There are not any major grammatical issues, only minor typos.
+Finally, the report has several issues with clarity and organization. The Problem Statement introduces confusion about terminology without resolving it, and the Significance section largely repeats earlier points without adding depth. The use of “p-values” does not align with standard definitions, leading to an overloaded and potentially misleading term. Additionally, there are no visualizations or diagrams to support the explanations. While there are no major grammatical issues, the overall presentation lacks cohesion and precision.
 
 ### G6 Review (WIP)
 
