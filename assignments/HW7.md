@@ -26,35 +26,57 @@ Finally, the report has several issues with clarity and organization. The Proble
 
 > Provide a summary of the report listing the problem (e.g., definition, significance, challenges) and the proposed approach (e.g., description, novelty, superiority over competition).
 
+The group aims to identify co-location patterns among two datasets targetting different areas - retail co-location patterns in Minneapolis and crime co-location in Chicago. The basic idea is to simply find statistically significant relationships that may be used later to identify some unidentified structure informing the co-location, such as commerical demand or urban risk patterns. This in turn can help inform decision-making at the policy level. The approach is easy enough to follow. They load and preprocess the data by picking the 'feature' (brand name, crime category) and the geographic location of that feature to create a neighborhood using a pre-defined threshold value. From this neighborhood, we can find co-location patterns using the participation index. The novelty is not immediately clear to the reader, but seems to be the application of previous works into a unified framework. This framework is then used against different domains and data (commerical in MN, crime in IL) to show the robustness of the process.
+
 > Is the problem stated clearly? 
 >- Does it list inputs, output, an objective function, and >constraints (e.g., key assumptions). 
 >- Does it illustrate inputs and output.
 >- Does it define and illustrate key concepts needed to understand the problem statement?
 
+The problem is stated clearly. The inputs and outputs are not listed inline, but can be inferred as any dataset with similar features and their geographic locations (e.g. commerical brand locations) which leads to a downstream output of the calculated co-location pattern analysis, which is domain-dependent. In section 6, Validation, we see graphics and features of the input datasets used in this paper. The key concepts needed to interpret the paper are suitably defined, whether in the Problem Statement or Validation sections.
+
 >Is the problem's importance articulated by addressing questions such as the following:
 >- Who cares about the problem? 
 >- If the project is successful, what difference (e.g., societal, technical) will it make?
 
+The problem's importance is articulated well for the given examples. Commerical co-location can help predict consumer demands and patterns, while crime co-location can help inform urban risk mapping. These are domain-specific interpretations, and for each new domain this framework is applied to the interpretation will change. This implies that anyone could find a use for this framework to analyze a problem they care about, and policy-makers could use this to identify problems most people care about. Success of this project at a large scale could help inform policy based on urban risk assessments, commerical patterns, transit demands, residential planning, and more. 
+
 >Are the problem’s key challenges identified? 
 
+There do not seem to be any key challenges identified. The group relies heavily on prior work and the contribution here is to refine that work to an applicable pipeline. This implies the challenge is refining the work and generalizing the principles to be domain-agnostic.
 
 >Is an approach proposed to address the key challenges in the problem?
 
+Sections 5 and 6, Proposed Approach and Validation, show the general process and define it such that any dataset with features attributed to a geographic location could be used with this framework. This shows how the pipeline can be used cross-domain. The results shown in section 6 and discussed in section 7 show clear understanding and effective application of the utilized principles to address the problem.
 
 >Is the novelty of the proposed approach articulated? For example, did the proposal summarize related work and their limitations overcome by the proposed approach?
 
+The novelty is stipulated as the framework itself, and is articulated well enough. The reader would be interested to see an artifact of this work, code to reproduce the results or to apply to other domains. Beyond that, the visualizations and discussions on the results are convincing that the proposed approach accomplished what the group set out to do.
 
 >Did the report articulate the superiority of the proposed approach over the state of the art? For example, did it provide evidence (e.g., examples, theorems, experiments, case-study, etc.).
 
+The main validations listed are case studies using the aforementioned Minneapolis commerical data and Chicago crime data. There are also basic formulaic validations listed in section 6. The investigations of these case studies with the shown framework is effective at convincing the reader of the superiority over state-of-the-art.
+
 >Did the report list contribution claims? For example, did it list contribution such as new concepts, theories, data-structures, algorithms, new approaches, etc.
+
+The group claims the framework for this experiment as a contribution, that is the process of: 
+data preprocessing -> spatial feature construction -> neighborhood construction -> candidate generation -> co-location pattern detection
+This pipeline seems to be the implied process for the prior works, but never explicitly stated until here. By formalizing the process into a framework with cross-domain applicability, this paper improves on the process itself of state-of-the-art methods.
 
 >Did the report provide evidence to support the contribution claims?
 
+See above
+
 >Did the report include next steps and future work? 
+
+The future work includes three main topics: higher-order co-location pattern analysis, adaptive neighborhood distance thresholds, and temporal analysis. These seem like logical next steps to improve the applicability, robustness, and information that can be gained from this analysis.
 
 >Are the results reproducible? (For example, did the report provide adequate details of proofs, experiment design, case study parameters, assumptions to help readers understand the validation process.)
 
+The project seems to be reproducible. The data is explicitly mentioned, the process is involved enough to follow, and the results are validated and discussed enough to reproduce. The specification of the simulations is a bit weak, but I believe we are told enough in that they are randomized datasets generated within the same bounds as the original (location bounded, number of features) and we are told they are Monte Carlo simulations.
+
 >Other comments (e.g., readability, self-contained?, grammar, adequate use of illustrations, summarizing data with charts, etc.)
+- paragraph 5: reword data categories to actual crimes so it fits into the text better: "incidents such as assaults, damage to property, and selling or use of narcotics"
 
 ## CP9
 > Oral presentation in the class using 10 to 15 slides.
